@@ -1,6 +1,6 @@
 name = "Khovanov"
 uuid = "033b080b-81cb-4a7b-845e-e0156c9eb54a"
-authors = ["Taketo Sano <taketo1024@gmail.com> and contributors"]
+authors = ["Taketo Sano <taketo1024@gmail.com>"]
 version = "0.1.0"
 
 [compat]
