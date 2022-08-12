@@ -4,6 +4,7 @@ authors = ["Taketo Sano <taketo1024@gmail.com>"]
 version = "0.1.0"
 
 [deps]
+Polynomials = "f27b6e38-b328-58d1-80ce-0feddd5e7a45"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [compat]
