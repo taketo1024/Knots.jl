@@ -40,15 +40,16 @@ module Links
         Crossing(t, x.edges)
     end
 
-    # function pass(x::Crossing, i::Int) :: Int
-    #     if x.type ∈ [X⁺, X⁻]
-    #         (i + 2) % 4
-    #     elseif x.type == H
-    #         3 - i
-    #     else
-    #         (5 - i) % 4
-    #     end
-    # end
+    function pass(x::Crossing, i::Int) :: Int
+        p(j) = if x.type ∈ [X⁺, X⁻]
+            (j + 2) % 4
+        elseif x.type == H
+            3 - j
+        else
+            (5 - j) % 4
+        end
+        p(i - 1) + 1
+    end
 
     function strands(x::Crossing) :: Vector{Vector{Edge}}
         if x.type ∈ [X⁺, X⁻]
@@ -150,9 +151,80 @@ module Links
         isempty(l.data)
     end
 
+    function crossingNum(l::Link) :: Int 
+        count(l.data) do x
+            !isResolved(x)
+        end
+    end
+
     function crossings(l::Link) :: Vector{Crossing}
         filter(l.data) do x 
             !isResolved(x)
+        end
+    end
+
+    function writhe(l::Link) :: Int 
+        sum(+, _crossingSigns(l))
+    end
+
+    function signedCrossingNums(l::Link) :: Tuple{Int, Int}
+        e = _crossingSigns(l)
+        (count(x -> x > 0, e), -count(x -> x < 0, e))
+    end
+
+    # search for the next crossing
+    Optional{T} = Union{T, Nothing}
+    function _next(l::Link, x::Crossing, i::Int) :: Optional{Tuple{Crossing, Int}} 
+        e = x.edges[i]
+        for y in l.data 
+            for (j, f) in enumerate(y.edges)
+                if e == f && (x ≠ y || (x == y && i ≠ j))
+                    return (y, j)
+                end
+            end
+        end
+        nothing
+    end
+
+    function _crossingSigns(l::Link) :: Vector{Int}
+        # traverse edges and determine orientation
+        result = Dict{Crossing, Int}()
+
+        function _traverse!(queue::Vector{Crossing}, sindex::Int)
+            while !isempty(queue)
+                start = popfirst!(queue)
+                x = start
+                i = sindex
+
+                while true
+                    if i ∈ [2, 4]
+                        result[x] = ((x.type == X⁺) == (i == 2)) ? 1 : -1
+                        deleteat!(queue, findall(queue) do y y == x end)
+                    end
+                    next = _next(l, x, pass(x, i))
+                    if next == (start, sindex) || next ≡ nothing
+                        break
+                    else
+                        (x, i) = next
+                    end
+                end
+            end
+        end
+
+        queue = l.data[:]
+        _traverse!(queue, 1)
+
+        if 0 ∈ values(result)
+            queue = findall(keys(result)) do x
+                result[x] == 0
+            end
+            _traverse!(queue, 2)
+        end
+
+        @assert 0 ∉ values(result)
+
+        map(crossings(l)) do x
+            result[x]
         end
     end
 
@@ -244,8 +316,3 @@ module Links
 
     Base.show(io::IO, l::Link) = print(io, "Link($(join(l.data, ", ")))")
 end
-
-using .Links
-l = Link([1,4,2,5],[3,6,4,1],[5,2,6,3])
-l2 = Links.resolve(l, [1,1,1])
-println(Links.components(l2))
