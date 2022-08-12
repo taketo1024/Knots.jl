@@ -1,6 +1,3 @@
-using Khovanov
-using Test
+include("LinkTests.jl")
 
-@testset "Khovanov.jl" begin
-    # Write your tests here.
-end
+LinkTests.testAll()
