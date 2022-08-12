@@ -1,3 +1,5 @@
+module Links 
+
 #typealiases
 
 Edge = Int
@@ -185,9 +187,12 @@ end
 
 function _crossingSigns(l::Link) :: Vector{Int}
     # traverse edges and determine orientation
-    result = Dict{Crossing, Int}()
+    result = Dict(map(crossings(l)) do x 
+        (x, 0)
+    end)
 
     function _traverse!(queue::Vector{Crossing}, sindex::Int)
+        done = Set{Crossing}()
         while !isempty(queue)
             start = popfirst!(queue)
             x = start
@@ -196,13 +201,16 @@ function _crossingSigns(l::Link) :: Vector{Int}
             while true
                 if i ∈ [2, 4]
                     result[x] = ((x.type == X⁺) == (i == 2)) ? 1 : -1
-                    deleteat!(queue, findall(queue) do y y == x end)
                 end
+
                 next = _next(l, x, pass(x, i))
                 if next == (start, sindex) || next ≡ nothing
                     break
                 else
                     (x, i) = next
+                    if x ∈ done 
+                        break
+                    end
                 end
             end
         end
@@ -212,9 +220,10 @@ function _crossingSigns(l::Link) :: Vector{Int}
     _traverse!(queue, 1)
 
     if 0 ∈ values(result)
-        queue = findall(keys(result)) do x
-            result[x] == 0
+        remain = filter(result) do (_, val)
+            val == 0
         end
+        queue = collect(keys(remain))
         _traverse!(queue, 2)
     end
 
@@ -316,3 +325,5 @@ Base.show(io::IO, l::Link) = print(io, "Link($(join(l.data, ", ")))")
 # constants
 emptyLink = Link([])
 unknot = resolve(Link([1, 2, 2, 1]), [0])
+
+end # module Links
