@@ -1,5 +1,6 @@
-include("LinkTests.jl")
-include("JonesTests.jl")
+using Test
 
-LinkTests.testAll()
-JonesTests.testAll()
+@testset verbose = true "Khovanov" begin
+    include("LinkTests.jl")
+    include("JonesTests.jl")
+end
