@@ -103,4 +103,17 @@ using Test
         @test edgeMap(cube, u, v, x[1]) == [(y[1], 1)]
         @test edgeMap(cube, u, v, x[2]) == [(y[2], 1), (y[3], 1)]
     end
+
+    @testset "cache" begin
+        l = Link([0, 0, 1, 1])
+        cube = KhCube(A, l)
+
+        @test length(cube.vertices) == 0
+        @test length(cube.edges) == 0
+
+        edge(cube, [0], [1])
+
+        @test length(cube.vertices) == 2
+        @test length(cube.edges) == 1
+    end
 end

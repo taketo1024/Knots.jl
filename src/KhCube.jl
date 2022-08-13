@@ -39,16 +39,21 @@ mutable struct KhCube{R}
     structure::KhAlgStructure{R}
     link::Link
     vertices::Dict{State, KhCubeVertex}
+    edges::Dict{Tuple{State, State}, Union{mergeEdge, splitEdge}}
 end
 
-KhCube(str::KhAlgStructure{R}, l::Link) where {R} = KhCube(str, l, Dict{State, KhCubeVertex}())
+function KhCube(str::KhAlgStructure{R}, l::Link) where {R} 
+     KhCube(str, l, Dict{State, KhCubeVertex}(), Dict{Tuple{State, State}, Union{mergeEdge, splitEdge}}())
+end
 
 function dim(cube::KhCube{R}) where {R} 
     crossingNum(cube.link)
 end
 
 function vertex(cube::KhCube{R}, u::State) :: KhCubeVertex where {R}
-    get!(cube.vertices, u, KhCubeVertex(cube.link, u))
+    get!(cube.vertices, u) do 
+        KhCubeVertex(cube.link, u)
+    end
 end
 
 Base.findfirst(arr::AbstractArray{T, N}, elm::T) where {T, N} = findfirst( x -> x == elm, arr )
@@ -66,6 +71,13 @@ function edgeSign(cube::KhCube{R}, u::State, v::State) :: Int where {R}
 end
 
 function edge(cube::KhCube{R}, u::State, v::State) :: Union{mergeEdge, splitEdge} where {R}
+    get!(cube.edges, (u, v)) do 
+        println("cache: ", (u, v))
+        _edge(cube, u, v)
+    end
+end
+
+function _edge(cube::KhCube{R}, u::State, v::State) :: Union{mergeEdge, splitEdge} where {R}
     @assert length(u) == length(v) == dim(cube)
     @assert sum(u) + 1 == sum(v)
 
