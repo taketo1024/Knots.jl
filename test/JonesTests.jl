@@ -1,8 +1,9 @@
 using Test
+using Polynomials
 using Khovanov: Link, emptyLink, unknot, trefoil, figure8, hopfLink
 using Khovanov: jonesPolynomial, P
 
-q = P([0, 1], 0, "q")
+q = variable(P)
 
 function testEmpty()
     l = emptyLink

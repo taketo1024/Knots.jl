@@ -1,6 +1,6 @@
 using Polynomials
 
-P = LaurentPolynomial{Int}
+P = LaurentPolynomial{Int, :q}
 
 function jonesPolynomial(l::Link; normalized=false) :: P
     if normalized && isEmpty(l)
@@ -11,10 +11,10 @@ function jonesPolynomial(l::Link; normalized=false) :: P
     (n₊, n₋) = signedCrossingNums(l)
     s = n₊ - 2n₋
 
-    q = P([0, 1], 0, "q")
-    qinv = P([1], -1, "q")
+    q = variable(P)
+    qinv = P([1], -1)
     
-    e = iseven(n₋) ? 1 : -1
+    e = (-1)^isodd(n₋)
     a = (s ≥ 0) ? q^s : qinv^(-s)
 
     res = zero(P)
