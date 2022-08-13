@@ -164,28 +164,3 @@ function _splitEdgeMap(cube::KhCube{R}, edg::splitEdge, v::State, x::KhChainGene
         (y, e * r)
     end
 end
-
-function _bitseq(length::Int, degree::Int) :: Vector{Int} 
-    if length <= 0 || degree < 0 || length < degree 
-        []
-    elseif length > 1
-        s₀ = map( b -> (b << 1) | 1, _bitseq(length - 1, degree - 1) )
-        s₁ = map( b -> b << 1, _bitseq(length - 1, degree) )
-        append!(s₀, s₁)
-    else # 0 ≤ degree ≤ length == 1
-        [degree] 
-    end
-end
-
-function collectGenerators(cube::KhCube{R}, degree::Int) :: Vector{KhChainGenerator} where {R} 
-    n = dim(cube)
-    if degree ∉ 0 : n
-        return []
-    end
-
-    vertices = _bitseq(n, degree)
-    reduce(1 : length(vertices); init=[]) do res, i
-        u = digits(vertices[i], base=2, pad=n)
-        append!(res, vertex(cube, u).generators)
-    end
-end

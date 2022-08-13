@@ -6,4 +6,5 @@ using Test
     include("KhAlgebraTest.jl")
     include("KhChainTests.jl")
     include("KhCubeTests.jl")
+    include("KhComplexTests.jl")
 end
