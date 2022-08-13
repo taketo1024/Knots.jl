@@ -1,7 +1,7 @@
 using Test
 
 @testset "KhCube.jl" begin
-    using Khovanov: KhCube, KhCubeVertex, KhAlgStructure, KhAlgGenerator, Kh, vertex, nextVertices, edge, edgeSign, edgeMap, mergeEdge, splitEdge
+    using Khovanov: KhCube, KhCubeVertex, KhAlgStructure, KhAlgGenerator, Kh, vertex, nextVertices, edge, edgeSign, edgeMap, mergeEdge, splitEdge, collectGenerators
     using Khovanov: Link, unknot, trefoil
 
     R = Int
@@ -124,5 +124,18 @@ using Test
 
         @test length(cube.vertices) == 2
         @test length(cube.edges) == 1
+    end
+
+    @testset "generators" begin
+        l = Link([0, 0, 1, 3], [2, 3, 1, 2])
+        cube = KhCube(A, l)
+
+        G₀ = collectGenerators(cube, 0)
+        G₁ = collectGenerators(cube, 1)
+        G₂ = collectGenerators(cube, 2)
+
+        @test length(G₀) == 4
+        @test length(G₁) == 10
+        @test length(G₂) == 4
     end
 end
