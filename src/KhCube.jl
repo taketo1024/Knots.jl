@@ -17,6 +17,22 @@ function KhCubeVertex(l::Link, s::State) :: KhCubeVertex
     KhCubeVertex(s, circles, generators)
 end
 
+# KhCubeEdge
+
+abstract type KhCubeEdgeType end
+
+struct mergeEdge <: KhCubeEdgeType
+    sign::Int
+    from::Tuple{Int, Int}
+    to::Int
+end
+
+struct splitEdge <: KhCubeEdgeType
+    sign::Int
+    from::Int
+    to::Tuple{Int, Int}
+end
+
 # KhCube
 
 mutable struct KhCube{R} 
@@ -35,41 +51,85 @@ function vertex(cube::KhCube{R}, u::State) :: KhCubeVertex where {R}
     get!(cube.vertices, u, KhCubeVertex(cube.link, u))
 end
 
-abstract type EdgeType end
-
-struct mergeEdge <: EdgeType
-    from::Tuple{Int, Int}
-    to::Int
-end
-
-struct splitEdge <: EdgeType
-    from::Int
-    to::Tuple{Int, Int}
-end
-
 Base.findfirst(arr::AbstractArray{T, N}, elm::T) where {T, N} = findfirst( x -> x == elm, arr )
 
-function edge(cube::KhCube{R}, u::State, v::State) :: Union{mergeEdge, splitEdge} where {R}
+function edgeSign(cube::KhCube{R}, u::State, v::State) :: Int where {R}
+    @assert length(u) == length(v) == dim(cube)
     @assert sum(u) + 1 == sum(v)
+
+    n = dim(cube)
+    i = findfirst(i -> u[i] != v[i], 1 : n)
+    k = count(1 : i) do i
+        u[i] == v[i] == 1
+    end
+    (-1)^isodd(k)
+end
+
+function edge(cube::KhCube{R}, u::State, v::State) :: Union{mergeEdge, splitEdge} where {R}
+    @assert length(u) == length(v) == dim(cube)
+    @assert sum(u) + 1 == sum(v)
+
+    e = edgeSign(cube, u, v)
     Cᵤ = vertex(cube, u).circles
     Cᵥ = vertex(cube, v).circles
     cᵤ = filter(c -> c ∉ Cᵥ, Cᵤ)
     cᵥ = filter(c -> c ∉ Cᵤ, Cᵥ)
 
     return if (length(cᵤ), length(cᵥ)) == (2, 1)
-        println(Cᵤ, Cᵥ, cᵤ, cᵥ)
         i₁ = findfirst(Cᵤ, cᵤ[1])
         i₂ = findfirst(Cᵤ, cᵤ[2])
         j  = findfirst(Cᵥ, cᵥ[1])
-        mergeEdge((i₁, i₂), j)
+        if i₁ > i₂ 
+            (i₁, i₂) = (i₂, i₁)
+        end
+        mergeEdge(e, (i₁, i₂), j)
 
     elseif (length(cᵤ), length(cᵥ)) == (1, 2)
         i  = findfirst(Cᵤ, cᵤ[1])
         j₁ = findfirst(Cᵥ, cᵥ[1])
         j₂ = findfirst(Cᵥ, cᵥ[2])
-        splitEdge(i, (j₁, j₂))
+        if j₁ > j₂ 
+            (j₁, j₂) = (j₂, j₁)
+        end
+        splitEdge(e, i, (j₁, j₂))
 
     else
         throw(Exception)
+    end
+end
+
+function edgeMap(cube::KhCube{R}, u::State, v::State, x::KhChainGenerator) :: Vector{Tuple{KhChainGenerator, R}} where {R}
+    @assert length(u) == length(v) == dim(cube)
+    @assert sum(u) + 1 == sum(v)
+
+    edg = edge(cube, u, v)
+    if isa(edg, mergeEdge)
+        m = product(cube.structure) 
+        
+        (e, (i, j), k) = (edg.sign, edg.from, edg.to)
+        (xᵢ, xⱼ) = (x.label[i], x.label[j])
+
+        res = map(m(xᵢ, xⱼ)) do (yₖ, r) 
+            label = copy(x.label)
+            deleteat!(label, j)
+            deleteat!(label, i)
+            insert!(label, k, yₖ)
+            y = KhChainGenerator(v, label)
+            (y, e * r)
+        end
+    else
+        Δ = coproduct(cube.structure)
+
+        (e, i, (j, k)) = (edg.sign, edg.from, edg.to)
+        xᵢ = x.label[i]
+        
+        res = map(Δ(xᵢ)) do (yⱼ, yₖ, r) 
+            label = copy(x.label)
+            deleteat!(label, i)
+            insert!(label, j, yⱼ)
+            insert!(label, k, yₖ)
+            y = KhChainGenerator(v, label)
+            (y, e * r)
+        end
     end
 end

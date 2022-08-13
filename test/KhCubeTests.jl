@@ -1,10 +1,11 @@
 using Test
 
 @testset "KhCube.jl" begin
-    using Khovanov: KhCube, KhCubeVertex, KhAlgGenerator, Kh, vertex, edge, mergeEdge, splitEdge
+    using Khovanov: KhCube, KhCubeVertex, KhAlgStructure, KhAlgGenerator, Kh, vertex, edge, edgeSign, edgeMap, mergeEdge, splitEdge
     using Khovanov: Link, unknot, trefoil
 
     R = Int
+    A = KhAlgStructure{R}(Kh)
 
     @testset "raw-vertex" begin
         l = Link([0, 0, 1, 1])
@@ -21,7 +22,6 @@ using Test
 
     @testset "vertex" begin
         l = Link([0, 0, 1, 1])
-        A = KhAlgStructure{R}(Kh)
         cube = KhCube(A, l)
         v0 = vertex(cube, [0])
         v1 = vertex(cube, [1])
@@ -36,30 +36,71 @@ using Test
 
     @testset "edge-merge" begin
         l = Link([0, 0, 1, 1])
-        A = KhAlgStructure{R}(Kh)
         cube = KhCube(A, l)
         e = edge(cube, [0], [1])
-
-        if isa(e, mergeEdge)
-            @test e.from == (1, 2)
-            @test e.to == 1
-        else
-            @test false
-        end
+        @test e == mergeEdge(+1, (1, 2), 1)
     end
 
     @testset "edge-split" begin
         l = Link([0, 1, 1, 0])
-        A = KhAlgStructure{R}(Kh)
         cube = KhCube(A, l)
         e = edge(cube, [0], [1])
-
-        if isa(e, splitEdge)
-            @test e.from == 1
-            @test e.to == (1, 2)
-        else
-            @test false
-        end
+        @test e == splitEdge(+1, 1, (1, 2))
     end
 
+    @testset "2-crossing-edge-sign" begin
+        l = Link([0, 0, 1, 3], [2, 3, 1, 2])
+        cube = KhCube(A, l)
+        e1 = edgeSign(cube, [0, 0], [1, 0])
+        e2 = edgeSign(cube, [0, 0], [0, 1])
+        e3 = edgeSign(cube, [1, 0], [1, 1])
+        e4 = edgeSign(cube, [0, 1], [1, 1])
+
+        @test e1 == +1
+        @test e2 == +1
+        @test e3 == -1
+        @test e4 == +1
+    end
+
+    @testset "2-crossing-edge" begin
+        l = Link([0, 0, 1, 3], [2, 3, 1, 2])
+        cube = KhCube(A, l)
+        e1 = edge(cube, [0, 0], [1, 0])
+        e2 = edge(cube, [0, 0], [0, 1])
+        e3 = edge(cube, [1, 0], [1, 1])
+        e4 = edge(cube, [0, 1], [1, 1])
+
+        @test e1 == mergeEdge(+1, (1, 2), 1)
+        @test e2 == splitEdge(+1, 2, (2, 3))
+        @test e3 == splitEdge(-1, 1, (1, 2))
+        @test e4 == mergeEdge(+1, (1, 2), 1)
+    end
+
+    @testset "edgemap-merge" begin
+        l = Link([0, 0, 1, 1])
+        cube = KhCube(A, l)
+
+        u = [0]
+        v = [1]
+        x = vertex(cube, u).generators
+        y = vertex(cube, v).generators
+
+        @test edgeMap(cube, u, v, x[1]) == []
+        @test edgeMap(cube, u, v, x[2]) == [(y[1], 1)]
+        @test edgeMap(cube, u, v, x[3]) == [(y[1], 1)]
+        @test edgeMap(cube, u, v, x[4]) == [(y[2], 1)]
+    end
+
+    @testset "edgemap-split" begin
+        l = Link([0, 1, 1, 0])
+        cube = KhCube(A, l)
+
+        u = [0]
+        v = [1]
+        x = vertex(cube, u).generators
+        y = vertex(cube, v).generators
+
+        @test edgeMap(cube, u, v, x[1]) == [(y[1], 1)]
+        @test edgeMap(cube, u, v, x[2]) == [(y[2], 1), (y[3], 1)]
+    end
 end
