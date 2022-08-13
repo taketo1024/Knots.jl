@@ -2,6 +2,7 @@
 
 Edge = Int
 Resolution = Int
+State = Vector{Resolution}
 
 # Crossing
 
@@ -305,7 +306,7 @@ function resolve(l::Link, i::Int, r::Resolution) :: Link
     Link(data)
     end
 
-function resolve(l::Link, s::Vector{Resolution}) :: Link
+function resolve(l::Link, s::State) :: Link
     i = 0
     data = map(enumerate(l.data)) do (j, x) 
         if isResolved(x)

@@ -4,11 +4,11 @@ using ComputationalHomology
 # Generators of Cube(D) and CKh(D)
 
 struct KhChainGenerator
-    state::BitArray
+    state::State
     label::Vector{KhAlgGenerator}
 end
 
-asString(x::KhChainGenerator) = "$(join(x.label, ""))$(join(map(b -> b ? "₀" : "₁", x.state), ""))"
+asString(x::KhChainGenerator) = "$(join(x.label, ""))$(join(map(b -> (b == 0) ? "₀" : "₁", x.state), ""))"
 
 Base.show(io::IO, x::KhChainGenerator) = print(io, asString(x))
 Base.:(==)(x1::KhChainGenerator, x2::KhChainGenerator) = begin 
