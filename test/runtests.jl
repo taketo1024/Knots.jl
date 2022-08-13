@@ -5,4 +5,5 @@ using Test
     include("JonesTests.jl")
     include("KhAlgebraTest.jl")
     include("KhChainTests.jl")
+    include("KhCubeTests.jl")
 end
