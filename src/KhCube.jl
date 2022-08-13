@@ -127,32 +127,40 @@ function edgeMap(cube::KhCube{R}, u::State, v::State, x::KhChainGenerator) :: Ve
 
     edg = edge(cube, u, v)
     if isa(edg, mergeEdge)
-        m = product(cube.structure) 
-        
-        (e, (i, j), k) = (edg.sign, edg.from, edg.to)
-        (xᵢ, xⱼ) = (x.label[i], x.label[j])
-
-        res = map(m(xᵢ, xⱼ)) do (yₖ, r) 
-            label = copy(x.label)
-            deleteat!(label, j)
-            deleteat!(label, i)
-            insert!(label, k, yₖ)
-            y = KhChainGenerator(v, label)
-            (y, e * r)
-        end
+        _mergeEdgeMap(cube, edg, v, x)
     else
-        Δ = coproduct(cube.structure)
+        _splitEdgeMap(cube, edg, v, x)
+    end
+end
 
-        (e, i, (j, k)) = (edg.sign, edg.from, edg.to)
-        xᵢ = x.label[i]
+function _mergeEdgeMap(cube::KhCube{R}, edg::mergeEdge, v::State, x::KhChainGenerator) :: Vector{Tuple{KhChainGenerator, R}} where {R}
+    m = product(cube.structure) 
         
-        res = map(Δ(xᵢ)) do (yⱼ, yₖ, r) 
-            label = copy(x.label)
-            deleteat!(label, i)
-            insert!(label, j, yⱼ)
-            insert!(label, k, yₖ)
-            y = KhChainGenerator(v, label)
-            (y, e * r)
-        end
+    (e, (i, j), k) = (edg.sign, edg.from, edg.to)
+    (xᵢ, xⱼ) = (x.label[i], x.label[j])
+
+    res = map(m(xᵢ, xⱼ)) do (yₖ, r) 
+        label = copy(x.label)
+        deleteat!(label, j)
+        deleteat!(label, i)
+        insert!(label, k, yₖ)
+        y = KhChainGenerator(v, label)
+        (y, e * r)
+    end
+end
+
+function _splitEdgeMap(cube::KhCube{R}, edg::splitEdge, v::State, x::KhChainGenerator) :: Vector{Tuple{KhChainGenerator, R}} where {R}
+    Δ = coproduct(cube.structure)
+
+    (e, i, (j, k)) = (edg.sign, edg.from, edg.to)
+    xᵢ = x.label[i]
+    
+    res = map(Δ(xᵢ)) do (yⱼ, yₖ, r) 
+        label = copy(x.label)
+        deleteat!(label, i)
+        insert!(label, j, yⱼ)
+        insert!(label, k, yₖ)
+        y = KhChainGenerator(v, label)
+        (y, e * r)
     end
 end
