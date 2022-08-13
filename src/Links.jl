@@ -70,31 +70,34 @@ struct Component
     isClosed::Bool
 end
 
-function isConnectable(c::Component, arc::Vector{Edge}) :: Bool
-    if c.isClosed
+function isConnectable(c1::Component, c2::Component) :: Bool
+    if c1.isClosed || c2.isClosed
         return false
     end
-    ends = [first(c.edges), last(c.edges)]
-    first(arc) ∈ ends || last(arc) ∈ ends
+
+    (c1_head, c1_tail) = (first(c1.edges), last(c1.edges))
+    (c2_head, c2_tail) = (first(c2.edges), last(c2.edges))
+    ends = Set([c1_head, c1_tail, c2_head, c2_tail])
+
+    length(ends) < 4
 end
 
-function isConnectable(c1::Component, c2::Component) :: Bool
-    isConnectable(c1, c2.edges)
-end
-
-function connect(c::Component, arc::Vector{Edge}) :: Component
-    if c.isClosed
+function connect(c1::Component, c2::Component) :: Component
+    if c1.isClosed || c2.isClosed
         throw(Exception)
     end
 
-    edges = if last(c.edges) == first(arc) 
-        vcat(c.edges,  arc[2:end])
-    elseif last(c.edges) == last(arc)
-        vcat(c.edges, reverse(arc[1:end-1]))
-    elseif first(c.edges) == last(arc)
-        vcat(arc[1:end-1], c.edges)
-    elseif first(c.edges) == first(c.edges)
-        vcat(reverse(arc[2:end]), c.edges)
+    (c1_head, c1_tail) = (first(c1.edges), last(c1.edges))
+    (c2_head, c2_tail) = (first(c2.edges), last(c2.edges))
+
+    edges = if c1_tail == c2_head
+        vcat(c1.edges,  c2.edges[2:end])
+    elseif c1_tail == c2_tail
+        vcat(c1.edges, reverse(c2.edges[1:end-1]))
+    elseif c1_head == c2_tail
+        vcat(c2.edges[1:end-1], c1.edges)
+    elseif c1_head == c2_head
+        vcat(reverse(c2.edges[2:end]), c1.edges)
     else 
         throw(Exception)
     end
@@ -106,14 +109,15 @@ function connect(c::Component, arc::Vector{Edge}) :: Component
     end
 end
 
-function connect(c1::Component, c2::Component) :: Component
-    connect(c1, c2.edges)
-end
-
 Base.show(io::IO, c::Component) = begin
     str = join(c.edges, "-")
     print(io, c.isClosed ? "[$str]" : "($str)")
 end 
+
+Base.:(==)(c1::Component, c2::Component) = begin 
+    (c1.edges, c1.isClosed) == (c2.edges, c2.isClosed)
+end
+
 
 # Link
 
@@ -236,12 +240,17 @@ end
 function components(l::Link) :: Vector{Component}
     comps = Vector{Component}()
     for x in l.data
-        for s in strands(x)
-            i = findfirst(comps) do c 
-                isConnectable(c, s) 
+        for str in strands(x)
+            c = (str[1] == str[2]) ? 
+                Component([str[1]], true) : 
+                Component(str, false)
+
+            i = findfirst(comps) do c2
+                isConnectable(c, c2) 
             end
+
             if i ≠ nothing 
-                comps[i] = connect(comps[i], s)
+                comps[i] = connect(comps[i], c)
 
                 j = findfirst(1 : length(comps)) do j
                     i ≠ j && isConnectable(comps[i], comps[j])
@@ -251,7 +260,6 @@ function components(l::Link) :: Vector{Component}
                     deleteat!(comps, j)
                 end
             else 
-                c = Component(s, false)
                 push!(comps, c)
             end
         end
