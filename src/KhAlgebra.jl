@@ -8,17 +8,6 @@ asString(x::KhAlgGenerator) = (x == I) ? "1" : "X"
 # Base.<(x::KhAlgGenerator, y::KhAlgGenerator) = degree(x) < degree(y)
 Base.show(io::IO, x::KhAlgGenerator) = print(io, asString(x))
 
-# KhEnhancedState
-# Generators of Cube(D) and CKh(D)
-
-struct KhEnhancedState
-    state::BitArray
-    label::Vector{KhAlgGenerator}
-end
-
-asString(x::KhEnhancedState) = "$(join(x.label, ""))$(join(map(b -> b ? "₀" : "₁", x.state), ""))"
-Base.show(io::IO, ) = print(io, asString(x))
-
 # KhAlgStructure
 # Structure of A = R[X]/(X^2 - hX - t)
 
