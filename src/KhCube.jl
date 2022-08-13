@@ -56,6 +56,18 @@ function vertex(cube::KhCube{R}, u::State) :: KhCubeVertex where {R}
     end
 end
 
+function nextVertices(cube::KhCube{R}, u::State) :: Vector{State} where {R}
+    @assert length(u) == dim(cube)
+
+    n = length(u)
+    indices = filter(i -> u[i] == 0, 1 : n)
+    map(indices) do i in
+        v = copy(u)
+        v[i] = 1
+        v
+    end
+end
+
 Base.findfirst(arr::AbstractArray{T, N}, elm::T) where {T, N} = findfirst( x -> x == elm, arr )
 
 function edgeSign(cube::KhCube{R}, u::State, v::State) :: Int where {R}
@@ -72,7 +84,6 @@ end
 
 function edge(cube::KhCube{R}, u::State, v::State) :: Union{mergeEdge, splitEdge} where {R}
     get!(cube.edges, (u, v)) do 
-        println("cache: ", (u, v))
         _edge(cube, u, v)
     end
 end

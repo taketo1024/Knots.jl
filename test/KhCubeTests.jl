@@ -1,7 +1,7 @@
 using Test
 
 @testset "KhCube.jl" begin
-    using Khovanov: KhCube, KhCubeVertex, KhAlgStructure, KhAlgGenerator, Kh, vertex, edge, edgeSign, edgeMap, mergeEdge, splitEdge
+    using Khovanov: KhCube, KhCubeVertex, KhAlgStructure, KhAlgGenerator, Kh, vertex, nextVertices, edge, edgeSign, edgeMap, mergeEdge, splitEdge
     using Khovanov: Link, unknot, trefoil
 
     R = Int
@@ -32,6 +32,15 @@ using Test
         @test v1.state == [1]
         @test length(v1.circles) == 1
         @test length(v1.generators) == 2
+    end
+
+    @testset "nextVertices" begin
+        l = trefoil
+        cube = KhCube(A, l)
+        @test nextVertices(cube, [0, 0, 0]) == [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
+        @test nextVertices(cube, [1, 0, 0]) == [[1, 1, 0], [1, 0, 1]]
+        @test nextVertices(cube, [1, 1, 0]) == [[1, 1, 1]]
+        @test nextVertices(cube, [1, 1, 1]) == []
     end
 
     @testset "edge-merge" begin
