@@ -3,7 +3,7 @@ using Test
 @testset "KhComplex.jl" begin
     using Khovanov: KhComplex, hDegRange, chainGenerators, matrix, _chainGenerators
     using Khovanov: KhCube, KhAlgStructure, Kh
-    using Khovanov: Link, emptyLink, unknot, trefoil, mirror
+    using Khovanov: Link, emptyLink, unknot, trefoil, hopfLink, mirror
 
     R = Int
     A = KhAlgStructure{R}(Kh)

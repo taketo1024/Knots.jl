@@ -35,15 +35,17 @@ end
 
 # KhCube
 
-mutable struct KhCube{R} 
+struct KhCube{R} 
     structure::KhAlgStructure{R}
     link::Link
-    vertices::Dict{State, KhCubeVertex}
-    edges::Dict{Tuple{State, State}, Union{mergeEdge, splitEdge}}
+    _vertexCache::Dict{State, KhCubeVertex}
+    _edgeCache::Dict{Tuple{State, State}, Union{mergeEdge, splitEdge}}
 end
 
 function KhCube(str::KhAlgStructure{R}, l::Link) where {R} 
-     KhCube(str, l, Dict{State, KhCubeVertex}(), Dict{Tuple{State, State}, Union{mergeEdge, splitEdge}}())
+    vCache = Dict{State, KhCubeVertex}()
+    eCache = Dict{Tuple{State, State}, Union{mergeEdge, splitEdge}}()
+     KhCube(str, l, vCache, eCache)
 end
 
 function dim(cube::KhCube{R}) where {R} 
@@ -53,7 +55,7 @@ end
 function vertex(cube::KhCube{R}, u::State) :: KhCubeVertex where {R}
     @assert length(u) == dim(cube)
 
-    get!(cube.vertices, u) do 
+    get!(cube._vertexCache, u) do 
         KhCubeVertex(cube.link, u)
     end
 end
@@ -85,7 +87,7 @@ function edgeSign(cube::KhCube{R}, u::State, v::State) :: Int where {R}
 end
 
 function edge(cube::KhCube{R}, u::State, v::State) :: Union{mergeEdge, splitEdge} where {R}
-    get!(cube.edges, (u, v)) do 
+    get!(cube._edgeCache, (u, v)) do 
         _edge(cube, u, v)
     end
 end

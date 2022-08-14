@@ -1,13 +1,17 @@
 using .Utils
 using SparseArrays
 
+Matrix = SparseMatrixCSC
+
 struct KhComplex{R}
     link::Link
     cube::KhCube{R}
     degShift::Tuple{Int, Int}
+    _generatorsCache::Dict{Int, Vector{KhChainGenerator}}
+    _matrixCache::Dict{Int, Matrix{R}}
 end
 
-KhComplex(str::KhAlgStructure, l::Link; shift=true) where {R} = begin 
+KhComplex(str::KhAlgStructure{R}, l::Link; shift=true) where {R} = begin 
     cube = KhCube(str, l)
     degShift = if shift
         (n₊, n₋) = signedCrossingNums(l)
@@ -15,7 +19,9 @@ KhComplex(str::KhAlgStructure, l::Link; shift=true) where {R} = begin
     else
         (0, 0)
     end
-    KhComplex(l, cube, degShift)
+    gCache = Dict{Int, Vector{KhChainGenerator}}()
+    mCache = Dict{Int, Matrix{R}}()
+    KhComplex(l, cube, degShift, gCache, mCache)
 end
 
 function hDegRange(C::KhComplex{R}) :: UnitRange{Int} where {R}
@@ -24,17 +30,21 @@ function hDegRange(C::KhComplex{R}) :: UnitRange{Int} where {R}
     base : base + n
 end
 
-function chainGenerators(C::KhComplex{R}, degree::Int) :: Vector{KhChainGenerator} where {R} 
-    base = C.degShift[1] # <= 0
-    gens = _chainGenerators(C.cube, degree - base)
-    reduce(gens; init=[]) do res, entry
-        append!(res, entry[2])
+function chainGenerators(C::KhComplex{R}, k::Int) :: Vector{KhChainGenerator} where {R} 
+    get!(C._generatorsCache, k) do 
+        base = C.degShift[1] # <= 0
+        gens = _chainGenerators(C.cube, k - base)
+        reduce(gens; init=[]) do res, entry
+            append!(res, entry[2])
+        end
     end
 end
 
-function matrix(C::KhComplex{R}, degree::Int) :: SparseMatrixCSC{R} where {R} 
-    base = C.degShift[1] # <= 0
-    _matrix(C.cube, degree - base)
+function matrix(C::KhComplex{R}, k::Int) :: Matrix{R} where {R} 
+    get!(C._matrixCache, k) do 
+        base = C.degShift[1] # <= 0
+        _matrix(C.cube, k - base)
+    end
 end
 
 function _chainGenerators(cube::KhCube{R}, degree::Int) :: Vector{ Tuple{ State, Vector{KhChainGenerator} } } where {R} 
@@ -64,7 +74,7 @@ function _indexDict(gens::Vector) :: Dict{KhChainGenerator, Int}
     res
 end
 
-function _matrix(cube::KhCube{R}, degree::Int) :: SparseMatrixCSC{R} where {R}
+function _matrix(cube::KhCube{R}, degree::Int) :: Matrix{R} where {R}
     if degree ∉ 0 : dim(cube)
         return []
     end

@@ -134,12 +134,12 @@ using Test
         l = Link([0, 0, 1, 1])
         cube = KhCube(A, l)
 
-        @test length(cube.vertices) == 0
-        @test length(cube.edges) == 0
+        @test length(cube._vertexCache) == 0
+        @test length(cube._edgeCache) == 0
 
         edge(cube, [0], [1])
 
-        @test length(cube.vertices) == 2
-        @test length(cube.edges) == 1
+        @test length(cube._vertexCache) == 2
+        @test length(cube._edgeCache) == 1
     end
 end
