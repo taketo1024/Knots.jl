@@ -1,5 +1,6 @@
 module Khovanov 
 
+include("Utils.jl")
 include("Links.jl")
 include("Jones.jl")
 include("KhAlgebra.jl")

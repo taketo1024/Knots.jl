@@ -1,3 +1,6 @@
+using .Utils
+using SparseArrays
+
 struct KhComplex{R}
     link::Link
     cube::KhCube{R}
@@ -21,25 +24,13 @@ function hDegRange(C::KhComplex{R}) :: UnitRange{Int} where {R}
     base : base + n
 end
 
-function _bitseq(length::Int, degree::Int) :: Vector{Int} 
-    if length <= 0 || degree < 0 || length < degree 
-        []
-    elseif length > 1
-        s₀ = map( b -> (b << 1) | 1, _bitseq(length - 1, degree - 1) )
-        s₁ = map( b -> b << 1, _bitseq(length - 1, degree) )
-        append!(s₀, s₁)
-    else # 0 ≤ degree ≤ length == 1
-        [degree] 
-    end
-end
-
 function _collectGenerators(cube::KhCube{R}, degree::Int) :: Vector{ Tuple{ State, Vector{KhChainGenerator} } } where {R} 
     n = dim(cube)
     if degree ∉ 0 : n
         return []
     end
 
-    vertices = _bitseq(n, degree)
+    vertices = Utils.bitseq(n, degree)
     reduce(1 : length(vertices); init=[]) do res, i
         u = digits(vertices[i], base=2, pad=n)
         gens = vertex(cube, u).generators
@@ -55,8 +46,6 @@ function _indexDict(gens::Vector) :: Dict{KhChainGenerator, Int}
     end
     res
 end
-
-using SparseArrays
 
 function _matrix(cube::KhCube{R}, degree::Int) :: SparseMatrixCSC{R} where {R}
     k = degree
