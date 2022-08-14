@@ -60,13 +60,13 @@ function compute(H::KhHomology{R}, k::Int) :: KhHomologySummand{R} where {R <: R
     #         ^ free    ^ tor
 
     str = H.complex.cube.structure
-    Aₖ = matrix(H.complex, k)
+    Aₖ = differential(H.complex, k)
     nₖ = size(Aₖ)[2]
 
     nₖ == 0 && return zero(KhHomologySummand{R})
 
     # TODO: use cache
-    Aₖ₋₁ = matrix(H.complex, k - 1)
+    Aₖ₋₁ = differential(H.complex, k - 1)
     Fₖ₋₁ = smith(Aₖ₋₁)
 
     # non-zero diagonal entries of SNF(Dₖ₋₁)

@@ -9,7 +9,7 @@ struct KhComplex{R <: RingElement}
     cube::KhCube{R}
     degShift::Tuple{Int, Int}
     _generatorsCache::Dict{Int, Vector{KhChainGenerator}}
-    _matrixCache::Dict{Int, Matrix{R}}
+    _differentialCache::Dict{Int, Matrix{R}}
 end
 
 KhComplex(str::KhAlgStructure{R}, l::Link; shift=true) where {R <: RingElement} = begin 
@@ -41,10 +41,10 @@ function chainGenerators(C::KhComplex{R}, k::Int) :: Vector{KhChainGenerator} wh
     end
 end
 
-function matrix(C::KhComplex{R}, k::Int) :: Matrix{R} where {R <: RingElement} 
-    get!(C._matrixCache, k) do 
+function differential(C::KhComplex{R}, k::Int) :: Matrix{R} where {R <: RingElement} 
+    get!(C._differentialCache, k) do 
         base = C.degShift[1] # <= 0
-        _matrix(C.cube, k - base)
+        _differential(C.cube, k - base)
     end
 end
 
@@ -75,7 +75,7 @@ function _indexDict(gens::Vector) :: Dict{KhChainGenerator, Int}
     res
 end
 
-function _matrix(cube::KhCube{R}, degree::Int) :: Matrix{R} where {R <: RingElement}
+function _differential(cube::KhCube{R}, degree::Int) :: Matrix{R} where {R <: RingElement}
     k = degree
     Gₖ   = _chainGenerators(cube, k)
     Gₖ₊₁ = _chainGenerators(cube, k + 1)

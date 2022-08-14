@@ -1,7 +1,7 @@
 using Test
 
 @testset "KhComplex.jl" begin
-    using Khovanov: KhComplex, hDegRange, chainGenerators, matrix, _chainGenerators
+    using Khovanov: KhComplex, hDegRange, chainGenerators, differential, _chainGenerators
     using Khovanov: KhCube, KhAlgStructure
     using Khovanov: Link, emptyLink, unknot, trefoil, hopfLink, mirror
 
@@ -29,7 +29,7 @@ using Test
         @test C.degShift == (0, 0)
         @test hDegRange(C) == 0:0
         @test length(chainGenerators(C, 0)) == 1
-        @test size(matrix(C, 0)) == (0, 1)
+        @test size(differential(C, 0)) == (0, 1)
     end
 
     @testset "unknot" begin
@@ -39,7 +39,7 @@ using Test
         @test C.degShift == (0, 0)
         @test hDegRange(C) == 0:0
         @test length(chainGenerators(C, 0)) == 2
-        @test size(matrix(C, 0)) == (0, 2)
+        @test size(differential(C, 0)) == (0, 2)
     end
 
     @testset "pos-twist" begin
@@ -50,7 +50,7 @@ using Test
         @test hDegRange(C) == 0:1
         @test length(chainGenerators(C, 0)) == 4
         @test length(chainGenerators(C, 1)) == 2
-        @test size(matrix(C, 0)) == (2, 4)
+        @test size(differential(C, 0)) == (2, 4)
     end
 
     @testset "neg-twist" begin
@@ -61,7 +61,7 @@ using Test
         @test hDegRange(C) == -1:0
         @test length(chainGenerators(C, -1)) == 2
         @test length(chainGenerators(C,  0)) == 4
-        @test size(matrix(C, -1)) == (4, 2)
+        @test size(differential(C, -1)) == (4, 2)
     end
 
     @testset "pos-neg-twist" begin
@@ -74,8 +74,8 @@ using Test
         @test length(chainGenerators(C,  0)) == 10
         @test length(chainGenerators(C,  1)) == 4
 
-        D₋₁ = matrix(C, -1)
-        D₀  = matrix(C,  0)
+        D₋₁ = differential(C, -1)
+        D₀  = differential(C,  0)
         
         @test size(D₋₁) == (10, 4)
         @test size(D₀)  == (4, 10)
@@ -92,8 +92,8 @@ using Test
         @test length(chainGenerators(C, -1)) == 4
         @test length(chainGenerators(C,  0)) == 4
 
-        D₋₂ = matrix(C, -2)
-        D₋₁ = matrix(C, -1)
+        D₋₂ = differential(C, -2)
+        D₋₁ = differential(C, -1)
         
         @test size(D₋₂) == (4, 4)
         @test size(D₋₁) == (4, 4)
@@ -111,9 +111,9 @@ using Test
         @test length(chainGenerators(C, 2)) == 12
         @test length(chainGenerators(C, 3)) == 8
 
-        D₀ = matrix(C, 0)
-        D₁ = matrix(C, 1)
-        D₂ = matrix(C, 2)
+        D₀ = differential(C, 0)
+        D₁ = differential(C, 1)
+        D₂ = differential(C, 2)
         
         @test size(D₀) == (6, 4)
         @test size(D₁) == (12, 6)
