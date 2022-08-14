@@ -75,10 +75,6 @@ function _indexDict(gens::Vector) :: Dict{KhChainGenerator, Int}
 end
 
 function _matrix(cube::KhCube{R}, degree::Int) :: Matrix{R} where {R}
-    if degree ∉ 0 : dim(cube)
-        return []
-    end
-
     k = degree
     Gₖ   = _chainGenerators(cube, k)
     Gₖ₊₁ = _chainGenerators(cube, k + 1)
