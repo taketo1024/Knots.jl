@@ -19,17 +19,17 @@ end
 # KhChain
 # elements of Cube(D) and CKh(D)
 
-using ComputationalHomology
-
-mutable struct KhChain{R} <: ComputationalHomology.AbstractChain{KhChainGenerator,R}
-    dim::Int
+mutable struct KhChain{R}
     elements::Dict{KhChainGenerator,R}
 end
 
-KhChain(d::Int, elems::AbstractVector, coefs::AbstractVector) = KhChain(d, Dict(zip(elems, coefs)))
-KhChain(elems::AbstractVector, coefs::AbstractVector) = KhChain(0, elems, coefs)
+KhChain(elems::AbstractVector, coefs::AbstractVector) = KhChain(Dict(zip(elems, coefs)))
 
-asString(ch::KhChain{R}) where {R} = begin
+function mapCoeffs(f, c::KhChain{R}) :: KhChain{R} where {R}
+    KhChain( Dict( k => f(v) for (k, v) in c.elements ) )
+end
+
+function asString(ch::KhChain{R}) where {R}
     if isempty(ch.elements)
         "0"
     else
@@ -37,40 +37,30 @@ asString(ch::KhChain{R}) where {R} = begin
     end
 end
 
-# implement interface
-Base.zero(::Type{KhChain{R}}) where {R} = KhChain(0, Dict{KhChainGenerator, R}())
+function simplify!(ch::KhChain{R}) where {R}
+    for (k, v) in ch.elements
+        v == zero(R) && delete!(ch.elements, k)
+    end
+    ch
+end
+
+Base.zero(::Type{KhChain{R}}) where {R} = KhChain(Dict{KhChainGenerator, R}())
 Base.length(ch::KhChain{R}) where {R} = length(ch.elements)
 Base.copy(ch::KhChain{R}) where {R} = KhChain{R}(ch.dim, copy(ch.elements))
 Base.keys(ch::KhChain{R}) where {R} = keys(ch.elements)
 Base.values(ch::KhChain{R}) where {R} = values(ch.elements)
 Base.getindex(ch::KhChain{R}, k::KhChainGenerator) where {R} = get(ch.elements, k, zero(R))
 Base.setindex!(ch::KhChain{R}, c::R, k::KhChainGenerator) where {R} = setindex!(ch.elements, c, k)
-
-Base.push!(ch::KhChain{R}, e::Pair{KhChainGenerator, R}) where {R} = begin
-    (k,v) = e
-    if k ∈ ch
-        ch.elements[k] += v
-    else
-        push!(ch.elements, e)
-    end
-end
-
 Base.iterate(ch::KhChain{R}, state...) where {R} = begin
     y = iterate(ch.elements, state...)
     y === nothing && return nothing
     return (y[1], y[2])
 end
-
 Base.show(io::IO, ch::KhChain{R}) where {R} = print(io, asString(ch))
 
-Base.:(==)(c1::KhChain{R}, c2::KhChain{R}) where {R} = begin 
-    (c1.dim, c1.elements) == (c2.dim, c2.elements)
-end
-
-ComputationalHomology.dim(ch::KhChain{R}) where {R} = ch.dim
-ComputationalHomology.simplify(ch::KhChain{R}) where {R} = begin
-    for (k,v) in ch.elements
-        v == zero(R) && delete!(ch.elements, k)
-    end
-    return ch
-end
+Base.:(+)(c1::KhChain{R}, c2::KhChain{R}) where {R} = KhChain(mergewith(+, c1.elements, c2.elements))
+Base.:(-)(c::KhChain{R}) where {R} = mapCoeffs(-, c)
+Base.:(-)(c1::KhChain{R}, c2::KhChain{R}) where {R} = c1 + (-c2)
+Base.:(*)(r::R, c::KhChain{R}) where {R} = mapCoeffs( v -> r * v, c )
+Base.:(*)(c::KhChain{R}, r::R) where {R} = mapCoeffs( v -> v * r, c )
+Base.:(==)(c1::KhChain{R}, c2::KhChain{R}) where {R} = c1.elements == c2.elements
