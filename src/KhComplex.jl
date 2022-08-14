@@ -1,3 +1,26 @@
+struct KhComplex{R}
+    link::Link
+    cube::KhCube{R}
+    degShift::Tuple{Int, Int}
+end
+
+KhComplex(str::KhAlgStructure, l::Link; shift=true) where {R} = begin 
+    cube = KhCube(str, l)
+    degShift = if shift
+        (n₊, n₋) = signedCrossingNums(l)
+        (-n₋, n₊ - 2n₋)
+    else
+        (0, 0)
+    end
+    KhComplex(l, cube, degShift)
+end
+
+function hDegRange(C::KhComplex{R}) :: UnitRange{Int} where {R}
+    n = crossingNum(C.link)
+    base = C.degShift[1] # <= 0
+    base : base + n
+end
+
 function _bitseq(length::Int, degree::Int) :: Vector{Int} 
     if length <= 0 || degree < 0 || length < degree 
         []
