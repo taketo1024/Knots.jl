@@ -2,11 +2,11 @@ using Test
 
 @testset "KhCube.jl" begin
     using Khovanov: KhCube, KhCubeVertex, vertex, nextVertices, edge, edgeSign, edgeMap, mergeEdge, splitEdge
-    using Khovanov: KhAlgStructure, KhAlgGenerator, Kh
+    using Khovanov: KhAlgStructure, KhAlgGenerator
     using Khovanov: Link, unknot, emptyLink, trefoil
 
     R = Int
-    A = KhAlgStructure{R}(Kh)
+    A = KhAlgStructure(0, 0)
 
     @testset "raw-vertex" begin
         l = Link([0, 0, 1, 1])

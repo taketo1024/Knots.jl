@@ -1,3 +1,5 @@
+using AbstractAlgebra
+
 # KhAlgGenerator
 # Generators of A = R[X]/(X^2 - hX - t) ≅ R<1, X>
 
@@ -14,15 +16,13 @@ Base.show(io::IO, x::KhAlgGenerator) = print(io, asString(x))
 struct KhAlgStructure{R}
     h::R
     t::R
+    zero::R
+    one::R
 end
 
-@enum KhAlgStructureType Kh Lee BN
-
-KhAlgStructure{R}(type::KhAlgStructureType) where {R} = begin
-    (type == Kh ) ? KhAlgStructure(zero(R), zero(R)) : 
-    (type == Lee) ? KhAlgStructure(zero(R), one(R)) : 
-    (type == BN ) ? KhAlgStructure(one(R), zero(R)) : 
-    KhAlgStructure(zero(R), zero(R))
+KhAlgStructure(h::R, t::R) where {R} = begin
+    _R = parent(h)
+    KhAlgStructure(h, t, zero(_R), one(_R))
 end
 
 product(A::KhAlgStructure{R}) where {R} = begin
@@ -31,13 +31,13 @@ product(A::KhAlgStructure{R}) where {R} = begin
         # 2)  X1 = 1X = X
         # 3)  X^2 = hX + t
         res = if (x, y) == (I, I)         
-            [(I, one(R))]           
+            [(I, A.one)]           
         elseif  (x, y) ∈ [(I, X), (X, I)] 
-            [(X, one(R))]           
+            [(X, A.one)]           
         else
             [(X, A.h), (I, A.t)]
         end
-        filter(x -> x[2] != zero(R), res)
+        filter(x -> !iszero(x[2]), res)
     end
 end
 
@@ -46,10 +46,10 @@ coproduct(A::KhAlgStructure{R}) where {R} = begin
         # 1)  Δ1 = 1X + X1 - h(11)
         # 2)  ΔX = XX + t(11)
         res = if x == I
-            [(I, X, one(R)), (X, I, one(R)), (I, I, -A.h)]
+            [(I, X, A.one), (X, I, A.one), (I, I, -A.h)]
         else
-            [(X, X, one(R)), (I, I, A.t)]
+            [(X, X, A.one), (I, I, A.t)]
         end
-        filter(x -> x[3] != zero(R), res)
+        filter(x -> !iszero(x[3]), res)
     end
 end

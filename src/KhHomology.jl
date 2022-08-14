@@ -57,6 +57,7 @@ function compute(H::KhHomology{R}, k::Int) :: KhHomologySummand{R} where {R}
     #      ≅ Ker(Dₖ) ⊕ Coker(Dₖ₋₁)
     #         ^ free    ^ tor
 
+    str = H.complex.cube.structure
     Aₖ = matrix(H.complex, k)
     nₖ = size(Aₖ)[2]
 
@@ -67,7 +68,7 @@ function compute(H::KhHomology{R}, k::Int) :: KhHomologySummand{R} where {R}
     Fₖ₋₁ = smith(Aₖ₋₁)
 
     # non-zero diagonal entries of SNF(Dₖ₋₁)
-    eₖ₋₁ = Vector(filter(r -> r ≠ 0, Fₖ₋₁.SNF)) 
+    eₖ₋₁ = Vector(filter(r -> !iszero(r), Fₖ₋₁.SNF)) 
     rₖ₋₁ = length(eₖ₋₁)
 
     # Cₖ'  = S[:, 1 : rₖ₋₁],      rk = rₖ₋₁,
@@ -77,9 +78,9 @@ function compute(H::KhHomology{R}, k::Int) :: KhHomologySummand{R} where {R}
     Dₖ = Aₖ * view(S, :, rₖ₋₁ + 1 : nₖ)
     Fₖ = smith(Dₖ)
 
-    rₖ = length(filter(r -> r ≠ 0, Fₖ.SNF))
+    rₖ = length(filter(r -> !iszero(r), Fₖ.SNF))
     zₖ = nₖ - rₖ₋₁ - rₖ
-    tors = filter(r -> r ∉ (one(R), -one(R)), eₖ₋₁)
+    tors = filter(r -> r ∉ (str.one, -str.one), eₖ₋₁)
 
     KhHomologySummand(zₖ, tors)
 end

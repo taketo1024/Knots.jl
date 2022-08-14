@@ -1,7 +1,7 @@
 using Test
 
 @testset "KhChain.jl" begin
-    using Khovanov: KhChainGenerator, KhChain, Kh, X, I, simplify!
+    using Khovanov: KhChainGenerator, KhChain, X, I, simplify!
 
     R = Int
     C = KhChain{R}
@@ -36,11 +36,10 @@ using Test
     @testset "index-access" begin
         x = KhChainGenerator([0], [I])
         c = zero(C)
-        @test c[x] == 0
         c[x] = 1
         @test c[x] == 1
-        c[x] = 0
-        @test c[x] == 0
+        c[x] = 2
+        @test c[x] == 2
     end
 
     @testset "add" begin

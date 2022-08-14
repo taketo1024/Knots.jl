@@ -39,7 +39,7 @@ end
 
 function simplify!(ch::KhChain{R}) where {R}
     for (k, v) in ch.elements
-        v == zero(R) && delete!(ch.elements, k)
+        iszero(v) && delete!(ch.elements, k)
     end
     ch
 end
@@ -49,7 +49,7 @@ Base.length(ch::KhChain{R}) where {R} = length(ch.elements)
 Base.copy(ch::KhChain{R}) where {R} = KhChain{R}(ch.dim, copy(ch.elements))
 Base.keys(ch::KhChain{R}) where {R} = keys(ch.elements)
 Base.values(ch::KhChain{R}) where {R} = values(ch.elements)
-Base.getindex(ch::KhChain{R}, k::KhChainGenerator) where {R} = get(ch.elements, k, zero(R))
+Base.getindex(ch::KhChain{R}, k::KhChainGenerator) where {R} = getindex(ch.elements, k)
 Base.setindex!(ch::KhChain{R}, c::R, k::KhChainGenerator) where {R} = setindex!(ch.elements, c, k)
 Base.iterate(ch::KhChain{R}, state...) where {R} = begin
     y = iterate(ch.elements, state...)

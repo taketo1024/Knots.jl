@@ -2,11 +2,11 @@ using Test
 
 @testset "KhComplex.jl" begin
     using Khovanov: KhComplex, hDegRange, chainGenerators, matrix, _chainGenerators
-    using Khovanov: KhCube, KhAlgStructure, Kh
+    using Khovanov: KhCube, KhAlgStructure
     using Khovanov: Link, emptyLink, unknot, trefoil, hopfLink, mirror
 
     R = Int
-    A = KhAlgStructure{R}(Kh)
+    A = KhAlgStructure(0, 0)
 
     @testset "private-chain-generators" begin
         l = Link([0, 0, 1, 2], [1, 3, 3, 2])

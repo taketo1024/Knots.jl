@@ -1,10 +1,10 @@
 using Test
 
 @testset "KhAlgebra.jl" begin
-    using Khovanov: KhAlgStructure, product, coproduct, X, I, Kh, BN, Lee
+    using Khovanov: KhAlgStructure, product, coproduct, X, I
     
     @testset "type:Kh" begin
-        A = KhAlgStructure{Int}(Kh)
+        A = KhAlgStructure(0, 0)
         m = product(A)
         Δ = coproduct(A)
 
@@ -16,7 +16,7 @@ using Test
     end
 
     @testset "type:BN" begin
-        A = KhAlgStructure{Int}(BN)
+        A = KhAlgStructure(1, 0)
         m = product(A)
         Δ = coproduct(A)
 
@@ -28,7 +28,7 @@ using Test
     end
 
     @testset "type:Lee" begin
-        A = KhAlgStructure{Int}(Lee)
+        A = KhAlgStructure(0, 1)
         m = product(A)
         Δ = coproduct(A)
 
