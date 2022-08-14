@@ -1,13 +1,14 @@
-using .Utils
+using AbstractAlgebra
 using SparseArrays
 using SmithNormalForm: Smith, smith
+using .Utils
 
-struct KhHomologySummand{R}
+struct KhHomologySummand{R <: RingElement}
     rank::Int
     torsions::Vector{R}
 end
 
-function asString(s::KhHomologySummand{R}) :: String where {R}
+function asString(s::KhHomologySummand{R}) :: String where {R <: RingElement}
     iszero(s) && return "0"
     
     symbol = (R == Int) ? "Z" : "R" # TODO
@@ -18,32 +19,33 @@ function asString(s::KhHomologySummand{R}) :: String where {R}
     join(res, "⊕")
 end
 
-Base.zero(::Type{KhHomologySummand{R}}) where {R} = KhHomologySummand{R}(0, R[])
-Base.iszero(s::KhHomologySummand{R}) where {R} = (s.rank == 0 && isempty(s.torsions))
-Base.show(io::IO, s::KhHomologySummand{R}) where {R} = print(io, asString(s))
+Base.zero(::Type{KhHomologySummand{R}}) where {R <: RingElement} = 
+    KhHomologySummand{R}(0, R[])
+
+Base.iszero(s::KhHomologySummand{R}) where {R <: RingElement} = 
+    (s.rank == 0 && isempty(s.torsions))
+
+Base.show(io::IO, s::KhHomologySummand{R}) where {R <: RingElement} = 
+    print(io, asString(s))
 
 # KhHomology
 
-struct KhHomology{R} 
+struct KhHomology{R <: RingElement} 
     link::Link
     complex::KhComplex{R}
     _SNFCache::Dict{Int, Smith}
 end
 
-KhHomology(str::KhAlgStructure{R}, l::Link; shift=true) where {R} = begin 
+KhHomology(str::KhAlgStructure{R}, l::Link; shift=true) where {R <: RingElement} = begin 
     C = KhComplex(str, l; shift=shift)
     sCache = Dict{Int, Smith}()
     KhHomology(l, C, sCache)
 end
 
-KhHomology(l::Link; shift=true) where {R} = begin 
-    A = KhAlgStructure(Kh)
-    KhHomology(A, l, shift=shift)
-end
+Base.getindex(H::KhHomology{R}, k::Int) where {R <: RingElement} = 
+    compute(H, k)
 
-Base.getindex(H::KhHomology{R}, k::Int) where {R} = compute(H, k)
-
-function compute(H::KhHomology{R}, k::Int) :: KhHomologySummand{R} where {R}
+function compute(H::KhHomology{R}, k::Int) :: KhHomologySummand{R} where {R <: RingElement}
     #          Aₖ₋₁        Aₖ
     #     Cₖ₋₁ -----> Cₖ ------> Cₖ₊₁
     #     |           ^ 

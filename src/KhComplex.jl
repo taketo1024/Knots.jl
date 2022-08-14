@@ -1,9 +1,10 @@
-using .Utils
+using AbstractAlgebra
 using SparseArrays
+using .Utils
 
 Matrix = SparseMatrixCSC
 
-struct KhComplex{R}
+struct KhComplex{R <: RingElement}
     link::Link
     cube::KhCube{R}
     degShift::Tuple{Int, Int}
@@ -11,7 +12,7 @@ struct KhComplex{R}
     _matrixCache::Dict{Int, Matrix{R}}
 end
 
-KhComplex(str::KhAlgStructure{R}, l::Link; shift=true) where {R} = begin 
+KhComplex(str::KhAlgStructure{R}, l::Link; shift=true) where {R <: RingElement} = begin 
     cube = KhCube(str, l)
     degShift = if shift
         (n₊, n₋) = signedCrossingNums(l)
@@ -24,13 +25,13 @@ KhComplex(str::KhAlgStructure{R}, l::Link; shift=true) where {R} = begin
     KhComplex(l, cube, degShift, gCache, mCache)
 end
 
-function hDegRange(C::KhComplex{R}) :: UnitRange{Int} where {R}
+function hDegRange(C::KhComplex{R}) :: UnitRange{Int} where {R <: RingElement}
     n = crossingNum(C.link)
     base = C.degShift[1] # <= 0
     base : base + n
 end
 
-function chainGenerators(C::KhComplex{R}, k::Int) :: Vector{KhChainGenerator} where {R} 
+function chainGenerators(C::KhComplex{R}, k::Int) :: Vector{KhChainGenerator} where {R <: RingElement} 
     get!(C._generatorsCache, k) do 
         base = C.degShift[1] # <= 0
         gens = _chainGenerators(C.cube, k - base)
@@ -40,14 +41,14 @@ function chainGenerators(C::KhComplex{R}, k::Int) :: Vector{KhChainGenerator} wh
     end
 end
 
-function matrix(C::KhComplex{R}, k::Int) :: Matrix{R} where {R} 
+function matrix(C::KhComplex{R}, k::Int) :: Matrix{R} where {R <: RingElement} 
     get!(C._matrixCache, k) do 
         base = C.degShift[1] # <= 0
         _matrix(C.cube, k - base)
     end
 end
 
-function _chainGenerators(cube::KhCube{R}, degree::Int) :: Vector{ Tuple{ State, Vector{KhChainGenerator} } } where {R} 
+function _chainGenerators(cube::KhCube{R}, degree::Int) :: Vector{ Tuple{ State, Vector{KhChainGenerator} } } where {R <: RingElement} 
     n = dim(cube)
 
     if degree ∉ 0 : n
@@ -74,7 +75,7 @@ function _indexDict(gens::Vector) :: Dict{KhChainGenerator, Int}
     res
 end
 
-function _matrix(cube::KhCube{R}, degree::Int) :: Matrix{R} where {R}
+function _matrix(cube::KhCube{R}, degree::Int) :: Matrix{R} where {R <: RingElement}
     k = degree
     Gₖ   = _chainGenerators(cube, k)
     Gₖ₊₁ = _chainGenerators(cube, k + 1)

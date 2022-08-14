@@ -5,27 +5,33 @@ using AbstractAlgebra
 
 @enum KhAlgGenerator I X
 
-degree(x::KhAlgGenerator) = (x == I) ? 0 : -2
-asString(x::KhAlgGenerator) = (x == I) ? "1" : "X"
-# Base.<(x::KhAlgGenerator, y::KhAlgGenerator) = degree(x) < degree(y)
-Base.show(io::IO, x::KhAlgGenerator) = print(io, asString(x))
+function degree(x::KhAlgGenerator) 
+    (x == I) ? 0 : -2
+end
+
+function asString(x::KhAlgGenerator) 
+    (x == I) ? "1" : "X"
+end
+
+Base.show(io::IO, x::KhAlgGenerator) = 
+    print(io, asString(x))
 
 # KhAlgStructure
 # Structure of A = R[X]/(X^2 - hX - t)
 
-struct KhAlgStructure{R}
+struct KhAlgStructure{R <: RingElement}
     h::R
     t::R
     zero::R
     one::R
 end
 
-KhAlgStructure(h::R, t::R) where {R} = begin
+KhAlgStructure(h::R, t::R) where {R <: RingElement} = begin
     _R = parent(h)
     KhAlgStructure(h, t, zero(_R), one(_R))
 end
 
-product(A::KhAlgStructure{R}) where {R} = begin
+function product(A::KhAlgStructure{R}) where {R <: RingElement}
     (x::KhAlgGenerator, y::KhAlgGenerator) -> begin
         # 1)  1^2 = 1
         # 2)  X1 = 1X = X
@@ -41,7 +47,7 @@ product(A::KhAlgStructure{R}) where {R} = begin
     end
 end
 
-coproduct(A::KhAlgStructure{R}) where {R} = begin
+function coproduct(A::KhAlgStructure{R}) where {R <: RingElement} 
     (x::KhAlgGenerator) -> begin
         # 1)  Δ1 = 1X + X1 - h(11)
         # 2)  ΔX = XX + t(11)
