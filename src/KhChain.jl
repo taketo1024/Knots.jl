@@ -1,5 +1,3 @@
-using ComputationalHomology
-
 # KhEnhancedState
 # Generators of Cube(D) and CKh(D)
 
@@ -8,7 +6,9 @@ struct KhChainGenerator
     label::Vector{KhAlgGenerator}
 end
 
-asString(x::KhChainGenerator) = "$(join(x.label, ""))$(join(map(b -> (b == 0) ? "₀" : "₁", x.state), ""))"
+function asString(x::KhChainGenerator) 
+    isempty(x.label) ? "1" : "$(join(x.label, ""))$(join(map(b -> (b == 0) ? "₀" : "₁", x.state), ""))"
+end
 
 Base.show(io::IO, x::KhChainGenerator) = print(io, asString(x))
 Base.hash(x::KhChainGenerator) = Base.hash(x.state, Base.hash(x.label))
@@ -16,9 +16,10 @@ Base.:(==)(x1::KhChainGenerator, x2::KhChainGenerator) = begin
     (x1.state, x1.label) == (x2.state, x2.label)
 end
 
-
 # KhChain
 # elements of Cube(D) and CKh(D)
+
+using ComputationalHomology
 
 mutable struct KhChain{R} <: ComputationalHomology.AbstractChain{KhChainGenerator,R}
     dim::Int

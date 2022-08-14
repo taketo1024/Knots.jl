@@ -3,7 +3,7 @@ using Test
 @testset "KhCube.jl" begin
     using Khovanov: KhCube, KhCubeVertex, vertex, nextVertices, edge, edgeSign, edgeMap, mergeEdge, splitEdge
     using Khovanov: KhAlgStructure, KhAlgGenerator, Kh
-    using Khovanov: Link, unknot, trefoil
+    using Khovanov: Link, unknot, emptyLink, trefoil
 
     R = Int
     A = KhAlgStructure{R}(Kh)
@@ -21,7 +21,23 @@ using Test
         @test length(v1.generators) == 2
     end
 
-    @testset "vertex" begin
+    @testset "empty" begin
+        l = emptyLink 
+        cube = KhCube(A, l)
+        v = vertex(cube, Int[])
+
+        @test length(v.generators) == 1
+    end
+
+    @testset "unknot" begin
+        l = unknot 
+        cube = KhCube(A, l)
+        v = vertex(cube, Int[])
+
+        @test length(v.generators) == 2
+    end
+
+    @testset "one-crossing" begin
         l = Link([0, 0, 1, 1])
         cube = KhCube(A, l)
         v0 = vertex(cube, [0])
