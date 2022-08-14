@@ -7,4 +7,5 @@ using Test
     include("KhChainTests.jl")
     include("KhCubeTests.jl")
     include("KhComplexTests.jl")
+    include("KhHomologyTests.jl")
 end

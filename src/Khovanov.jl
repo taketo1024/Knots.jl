@@ -7,5 +7,6 @@ include("KhAlgebra.jl")
 include("KhChain.jl")
 include("KhCube.jl")
 include("KhComplex.jl")
+include("KhHomology.jl")
 
 end # module Khovanov
