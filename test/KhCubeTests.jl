@@ -75,7 +75,7 @@ using Test
     end
 
     @testset "2-crossing-edge-sign" begin
-        l = Link([0, 0, 1, 3], [2, 3, 1, 2])
+        l = Link([0, 0, 1, 2], [1, 3, 3, 2])
         cube = KhCube(A, l)
         e1 = edgeSign(cube, [0, 0], [1, 0])
         e2 = edgeSign(cube, [0, 0], [0, 1])
@@ -89,7 +89,7 @@ using Test
     end
 
     @testset "2-crossing-edge" begin
-        l = Link([0, 0, 1, 3], [2, 3, 1, 2])
+        l = Link([0, 0, 1, 2], [1, 3, 3, 2])
         cube = KhCube(A, l)
         e1 = edge(cube, [0, 0], [1, 0])
         e2 = edge(cube, [0, 0], [0, 1])

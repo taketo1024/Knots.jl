@@ -51,6 +51,8 @@ function dim(cube::KhCube{R}) where {R}
 end
 
 function vertex(cube::KhCube{R}, u::State) :: KhCubeVertex where {R}
+    @assert length(u) == dim(cube)
+
     get!(cube.vertices, u) do 
         KhCubeVertex(cube.link, u)
     end

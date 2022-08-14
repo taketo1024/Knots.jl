@@ -315,6 +315,7 @@ function resolve(l::Link, i::Int, r::Resolution) :: Link
     end
 
 function resolve(l::Link, s::State) :: Link
+    @assert length(s) <= crossingNum(l)
     i = 0
     data = map(enumerate(l.data)) do (j, x) 
         if isResolved(x)
