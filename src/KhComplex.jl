@@ -24,17 +24,34 @@ function hDegRange(C::KhComplex{R}) :: UnitRange{Int} where {R}
     base : base + n
 end
 
-function _collectGenerators(cube::KhCube{R}, degree::Int) :: Vector{ Tuple{ State, Vector{KhChainGenerator} } } where {R} 
-    n = dim(cube)
-    if degree ∉ 0 : n
-        return []
+function chainGenerators(C::KhComplex{R}, degree::Int) :: Vector{KhChainGenerator} where {R} 
+    base = C.degShift[1] # <= 0
+    gens = _chainGenerators(C.cube, degree - base)
+    reduce(gens; init=[]) do res, entry
+        append!(res, entry[2])
     end
+end
 
-    vertices = Utils.bitseq(n, degree)
-    reduce(1 : length(vertices); init=[]) do res, i
-        u = digits(vertices[i], base=2, pad=n)
-        gens = vertex(cube, u).generators
-        push!(res, (u, gens))
+function matrix(C::KhComplex{R}, degree::Int) :: SparseMatrixCSC{R} where {R} 
+    base = C.degShift[1] # <= 0
+    _matrix(C.cube, degree - base)
+end
+
+function _chainGenerators(cube::KhCube{R}, degree::Int) :: Vector{ Tuple{ State, Vector{KhChainGenerator} } } where {R} 
+    n = dim(cube)
+
+    if degree ∉ 0 : n
+        []
+    elseif n == degree == 0
+        u = Int[]
+        [(u, vertex(cube, u).generators)]
+    else 
+        vertices = Utils.bitseq(n, degree)
+        reduce(1 : length(vertices); init=[]) do res, i
+            u = digits(vertices[i], base=2, pad=n)
+            gens = vertex(cube, u).generators
+            push!(res, (u, gens))
+        end
     end
 end
 
@@ -48,9 +65,13 @@ function _indexDict(gens::Vector) :: Dict{KhChainGenerator, Int}
 end
 
 function _matrix(cube::KhCube{R}, degree::Int) :: SparseMatrixCSC{R} where {R}
+    if degree ∉ 0 : dim(cube)
+        return []
+    end
+
     k = degree
-    Gₖ   = _collectGenerators(cube, k)
-    Gₖ₊₁ = _collectGenerators(cube, k + 1)
+    Gₖ   = _chainGenerators(cube, k)
+    Gₖ₊₁ = _chainGenerators(cube, k + 1)
     
     Is = Vector{Int}()
     Js = Vector{Int}()
