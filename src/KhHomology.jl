@@ -1,6 +1,5 @@
 using AbstractAlgebra
 using SparseArrays
-using SmithNormalForm: Smith, smith
 using .Utils
 
 struct KhHomologySummand{R <: RingElement}
@@ -16,7 +15,7 @@ function asString(s::KhHomologySummand{R}) :: String where {R <: RingElement}
     for t in s.torsions
         push!(res, "$symbol/$t")
     end
-    join(res, "⊕")
+    join(res, " ⊕ ")
 end
 
 Base.zero(::Type{KhHomologySummand{R}}) where {R <: RingElement} = 
@@ -33,26 +32,27 @@ Base.show(io::IO, s::KhHomologySummand{R}) where {R <: RingElement} =
 struct KhHomology{R <: RingElement} 
     link::Link
     complex::KhComplex{R}
-    _SNFCache::Dict{Int, Smith}
+    _SNFCache::Dict{Int, SNF{R}}
 end
 
 KhHomology(str::KhAlgStructure{R}, l::Link; shift=true) where {R <: RingElement} = begin 
     C = KhComplex(str, l; shift=shift)
-    sCache = Dict{Int, Smith}()
+    sCache = Dict{Int, SNF{R}}()
     KhHomology(l, C, sCache)
 end
 
-Base.getindex(H::KhHomology{R}, k::Int) where {R <: RingElement} = 
-    compute(H, k)
+function hDegRange(H::KhHomology{R}) :: UnitRange{Int} where {R <: RingElement}
+    hDegRange(H.complex)
+end
 
 function compute(H::KhHomology{R}, k::Int) :: KhHomologySummand{R} where {R <: RingElement}
     #          Aₖ₋₁        Aₖ
     #     Cₖ₋₁ -----> Cₖ ------> Cₖ₊₁
-    #     |           ^ 
-    #   T |           | S 
-    #     V    Dₖ₋₁   |
+    #     ^           | 
+    #   Q |           | P 
+    #     |    Dₖ₋₁   V
     #     Cₖ₋₁ -----> Cₖ' 
-    #                 ⊕    Dₖ
+    #                 ⊕    Bₖ
     #                 Cₖ''-----> Cₖ₊₁
     #
     #   Hₖ = Ker(dₖ) / Im(dₖ₋₁)
@@ -60,29 +60,44 @@ function compute(H::KhHomology{R}, k::Int) :: KhHomologySummand{R} where {R <: R
     #         ^ free    ^ tor
 
     str = H.complex.cube.structure
+    ref = str.h
+
     Aₖ = differential(H.complex, k)
     nₖ = size(Aₖ)[2]
-
     nₖ == 0 && return zero(KhHomologySummand{R})
 
     # TODO: use cache
     Aₖ₋₁ = differential(H.complex, k - 1)
-    Fₖ₋₁ = smith(Aₖ₋₁)
+    Fₖ₋₁ = snf(Aₖ₋₁, ref)
 
     # non-zero diagonal entries of SNF(Dₖ₋₁)
-    eₖ₋₁ = Vector(filter(r -> !iszero(r), Fₖ₋₁.SNF)) 
+    eₖ₋₁ = Fₖ₋₁.diag
     rₖ₋₁ = length(eₖ₋₁)
 
-    # Cₖ'  = S[:, 1 : rₖ₋₁],      rk = rₖ₋₁,
-    # Cₖ'' = S[:, rₖ₋₁ + 1 : nₖ], rk = nₖ - rₖ₋₁.
+    P⁻¹ = Fₖ₋₁.P⁻¹
+    Bₖ = Aₖ * view(P⁻¹, :, rₖ₋₁ + 1 : nₖ)
+    Fₖ = snf(Bₖ, ref)
+    rₖ = length(filter(r -> !iszero(r), Fₖ.diag))
 
-    S = Fₖ₋₁.S
-    Dₖ = Aₖ * view(S, :, rₖ₋₁ + 1 : nₖ)
-    Fₖ = smith(Dₖ)
-
-    rₖ = length(filter(r -> !iszero(r), Fₖ.SNF))
     zₖ = nₖ - rₖ₋₁ - rₖ
-    tors = filter(r -> r ∉ (str.one, -str.one), eₖ₋₁)
+    tors = filter(r -> !is_unit(r), eₖ₋₁)
 
     KhHomologySummand(zₖ, tors)
 end
+
+function asString(H::KhHomology{R}) :: String where {R <: RingElement}
+    L = H.complex.cube.link
+    P = parent(H.complex.cube.structure.h)
+    lines = ["L = $L", "R = $R", "---"]
+    for i in hDegRange(H)
+        push!(lines, "H[$i] = $(asString(H[i]))")
+    end
+    push!(lines, "---")
+    join(lines, "\n")
+end
+
+Base.getindex(H::KhHomology{R}, k::Int) where {R <: RingElement} = 
+    compute(H, k)
+
+Base.show(io::IO, H::KhHomology{R}) where {R <: RingElement} = 
+    print(io, asString(H))

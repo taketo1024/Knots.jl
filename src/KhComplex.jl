@@ -2,14 +2,14 @@ using AbstractAlgebra
 using SparseArrays
 using .Utils
 
-Matrix = SparseMatrixCSC
+const SpMatrix = SparseMatrixCSC
 
 struct KhComplex{R <: RingElement}
     link::Link
     cube::KhCube{R}
     degShift::Tuple{Int, Int}
     _generatorsCache::Dict{Int, Vector{KhChainGenerator}}
-    _differentialCache::Dict{Int, Matrix{R}}
+    _differentialCache::Dict{Int, SpMatrix{R}}
 end
 
 KhComplex(str::KhAlgStructure{R}, l::Link; shift=true) where {R <: RingElement} = begin 
@@ -21,7 +21,7 @@ KhComplex(str::KhAlgStructure{R}, l::Link; shift=true) where {R <: RingElement} 
         (0, 0)
     end
     gCache = Dict{Int, Vector{KhChainGenerator}}()
-    mCache = Dict{Int, Matrix{R}}()
+    mCache = Dict{Int, SpMatrix{R}}()
     KhComplex(l, cube, degShift, gCache, mCache)
 end
 
@@ -41,7 +41,7 @@ function chainGenerators(C::KhComplex{R}, k::Int) :: Vector{KhChainGenerator} wh
     end
 end
 
-function differential(C::KhComplex{R}, k::Int) :: Matrix{R} where {R <: RingElement} 
+function differential(C::KhComplex{R}, k::Int) :: SpMatrix{R} where {R <: RingElement} 
     get!(C._differentialCache, k) do 
         base = C.degShift[1] # <= 0
         _differential(C.cube, k - base)
@@ -75,7 +75,7 @@ function _indexDict(gens::Vector) :: Dict{KhChainGenerator, Int}
     res
 end
 
-function _differential(cube::KhCube{R}, degree::Int) :: Matrix{R} where {R <: RingElement}
+function _differential(cube::KhCube{R}, degree::Int) :: SpMatrix{R} where {R <: RingElement}
     k = degree
     Gₖ   = _chainGenerators(cube, k)
     Gₖ₊₁ = _chainGenerators(cube, k + 1)
