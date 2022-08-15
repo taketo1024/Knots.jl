@@ -11,18 +11,33 @@ struct SNF{R <: RingElement}
     Q::SparseMatrixCSC{R}
 end
 
-function snf(A::SparseMatrixCSC{R}, baseRing::RR) :: SNF{R} where {R <: RingElement, RR <: Ring}
+function snf(A::SparseMatrixCSC{R}, baseRing::RR; withTrans=false) :: SNF{R} where {R <: RingElement, RR <: Ring}
     (m, n) = size(A)
     r = min(m, n)
 
     Aᵈ = _toDense(A, baseRing)
-    (Sᵈ, Pᵈ, Qᵈ) = snf_with_transform(Aᵈ) # PAQ = S
 
-    S = filter(!iszero, map( i -> Sᵈ[i, i], 1 : r ))
-    P = _toSparse(Pᵈ)
-    Q = _toSparse(Qᵈ)
+    if withTrans 
+        (Sᵈ, Pᵈ, Qᵈ) = AbstractAlgebra.snf_with_transform(Aᵈ) # PAQ = S
 
-    SNF(S, P, Q)
+        S = filter(!iszero, map( i -> Sᵈ[i, i], 1 : r ))
+        isempty(S) && (S = R[])
+
+        P = _toSparse(Pᵈ)
+        Q = _toSparse(Qᵈ)
+
+        SNF(S, P, Q)
+    else
+        Sᵈ = AbstractAlgebra.snf(Aᵈ)
+
+        S = filter(!iszero, map( i -> Sᵈ[i, i], 1 : r ))
+        isempty(S) && (S = R[])
+
+        P = spzeros(R, m, m)
+        Q = spzeros(R, n, n)
+
+        SNF(S, P, Q)
+    end
 end
 
 function _toDense(A::SparseMatrixCSC{R}, baseRing::RR) :: MatrixElem where {R <: RingElement, RR <: Ring}
