@@ -1,4 +1,5 @@
 using AbstractAlgebra
+using AbstractAlgebra: Ring
 using SparseArrays: SparseMatrixCSC
 
 # SNF
@@ -10,12 +11,12 @@ struct SNF{R <: RingElement}
     Q::SparseMatrixCSC{R}
 end
 
-function snf(A::SparseMatrixCSC{R}, ref::R) :: SNF{R} where {R <: RingElement}
+function snf(A::SparseMatrixCSC{R}, baseRing::RR) :: SNF{R} where {R <: RingElement, RR <: Ring}
     (m, n) = size(A)
     r = min(m, n)
 
-    Aᵈ = _toDense(A, ref)
-    (Sᵈ, Pᵈ, Qᵈ) = AbstractAlgebra.snf_with_transform(Aᵈ) # PAQ = S
+    Aᵈ = _toDense(A, baseRing)
+    (Sᵈ, Pᵈ, Qᵈ) = snf_with_transform(Aᵈ) # PAQ = S
 
     S = filter(!iszero, map( i -> Sᵈ[i, i], 1 : r ))
     P = _toSparse(Pᵈ)
@@ -24,14 +25,13 @@ function snf(A::SparseMatrixCSC{R}, ref::R) :: SNF{R} where {R <: RingElement}
     SNF(S, P, Q)
 end
 
-function _toDense(A::SparseMatrixCSC{R}, ref::R) :: AbstractAlgebra.MatrixElem where {R <: RingElement}
+function _toDense(A::SparseMatrixCSC{R}, baseRing::RR) :: MatrixElem where {R <: RingElement, RR <: Ring}
     (m, n) = size(A)
-    P = parent(ref)
-    
+
     if R <: Union{Integer, Rational}
-        Aᵈ = AbstractAlgebra.matrix(P, A)
+        Aᵈ = matrix(baseRing, A)
     else
-        Aᵈ = AbstractAlgebra.zero_matrix(P, m, n)
+        Aᵈ = zero_matrix(baseRing, m, n)
         for (i, j, a) in zip(findnz(A)...)
             Aᵈ[i, j] = a
         end
@@ -39,7 +39,7 @@ function _toDense(A::SparseMatrixCSC{R}, ref::R) :: AbstractAlgebra.MatrixElem w
     Aᵈ
 end
 
-function _toSparse(Aᵈ::AbstractAlgebra.MatrixElem{R}) :: SparseMatrixCSC{R} where {R <: RingElement}
+function _toSparse(Aᵈ::MatrixElem{R}) :: SparseMatrixCSC{R} where {R <: RingElement}
     (m, n) = size(Aᵈ)
 
     Is = Int[]

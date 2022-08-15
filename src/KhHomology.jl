@@ -7,7 +7,7 @@ struct KhHomologySummand{R <: RingElement}
     torsions::Vector{R}
 end
 
-function asString(s::KhHomologySummand{R}, R_symbol="R") :: String where {R <: RingElement}
+function asString(s::KhHomologySummand{R}; R_symbol="R") :: String where {R <: RingElement}
     iszero(s) && return "⋅"
     res = (s.rank > 0) ? ["$R_symbol$( s.rank > 1 ? Utils.superscript(s.rank) : "" )"] : []
     for t in s.torsions
@@ -78,8 +78,8 @@ end
 function _snf(H::KhHomology{R}, k::Int) :: SNF{R} where {R <: RingElement}
     get!(H._SNFCache, k) do 
         Aₖ = differential(H.complex, k)
-        ref = H.complex.cube.structure.h
-        snf(Aₖ, ref)
+        baseRing = H.complex.cube.structure.baseRing
+        snf(Aₖ, baseRing)
     end
 end
 
@@ -88,7 +88,7 @@ function asString(H::KhHomology{R}) :: String where {R <: RingElement}
     A = H.complex.cube.structure
     lines = ["L = $L", A, "---"]
     for i in hDegRange(H)
-        push!(lines, "H[$i] = $(asString(H[i], A.R_symbol))")
+        push!(lines, "H[$i] = $(asString(H[i]; A.R_symbol))")
     end
     push!(lines, "---")
     join(lines, "\n")

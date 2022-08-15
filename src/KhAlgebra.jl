@@ -1,4 +1,5 @@
 using AbstractAlgebra
+using AbstractAlgebra: Ring
 using .Utils
 
 # KhAlgGenerator
@@ -20,25 +21,26 @@ Base.show(io::IO, x::KhAlgGenerator) =
 # KhAlgStructure
 # Structure of A = R[X]/(X^2 - hX - t)
 
-struct KhAlgStructure{R <: RingElement}
+struct KhAlgStructure{R <: RingElement, RR <: Ring}
     h::R
     t::R
+    baseRing::RR
     R_symbol::String
 end
 
-KhAlgStructure(h::R, t::R, R_symbol="R") where {R <: RingElement} = begin
-    KhAlgStructure(h, t, R_symbol)
+KhAlgStructure(h::R, t::R; R_symbol="R") where {R <: RingElement} = begin
+    KhAlgStructure(h, t, parent(h), R_symbol)
 end
 
 KhAlgStructure(name::String) = begin
-    (h, t, R_symbol) = _selectAlgStructure(name)
-    KhAlgStructure(h, t, R_symbol)
+    (h, t, baseRing, R_symbol) = _selectAlgStructure(name)
+    KhAlgStructure(h, t, baseRing, R_symbol)
 end
 
 function product(A::KhAlgStructure{R}) where {R <: RingElement}
     (x::KhAlgGenerator, y::KhAlgGenerator) -> begin
         (h, t) = (A.h, A.t)
-        one = Base.one(parent(h))
+        one = Base.one(A.baseRing)
 
         # 1)  1^2 = 1
         # 2)  X1 = 1X = X
@@ -59,7 +61,7 @@ end
 function coproduct(A::KhAlgStructure{R}) where {R <: RingElement} 
     (x::KhAlgGenerator) -> begin
         (h, t) = (A.h, A.t)
-        one = Base.one(parent(h))
+        one = Base.one(A.baseRing)
 
         # 1)  Δ1 = 1X + X1 - h(11)
         # 2)  ΔX = XX + t(11)
@@ -77,8 +79,8 @@ function asString(A::KhAlgStructure{R}) :: String where {R <: RingElement}
 end
 
 function _selectAlgStructure(name::String) 
-    Z = Int
-    Q = Rational
+    Z = parent(1)
+    Q = parent(1//1)
     F2 = AbstractAlgebra.GF(2)
     F3 = AbstractAlgebra.GF(3)
 
@@ -115,7 +117,7 @@ function _selectAlgStructure(name::String)
     elseif startswith(name, "F3[h,t]-")
         (PolynomialRing(F3, [:h, :t])[1], "F₃[h,t]")
     else
-        (Int, "Z")
+        (Z, "Z")
     end
 
     (h, t) = if endswith(name, "Kh")
@@ -134,7 +136,7 @@ function _selectAlgStructure(name::String)
         throw(Exception)
     end
 
-    (h, t, R_symbol)
+    (h, t, parent(h), R_symbol)
 end
 
 Base.show(io::IO, A::KhAlgStructure{R}) where {R} = 
