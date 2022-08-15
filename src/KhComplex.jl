@@ -34,9 +34,24 @@ end
 function chainGenerators(C::KhComplex{R}, k::Int) :: Vector{KhChainGenerator} where {R <: RingElement} 
     get!(C._generatorsCache, k) do 
         base = C.degShift[1] # <= 0
-        gens = _chainGenerators(C.cube, k - base)
-        reduce(gens; init=[]) do res, entry
-            append!(res, entry[2])
+        _chainGenerators(C.cube, k - base)
+    end
+end
+
+function _chainGenerators(cube::KhCube{R}, degree::Int) :: Vector{KhChainGenerator} where {R <: RingElement} 
+    n = dim(cube)
+
+    if degree ∉ 0 : n
+        []
+    elseif n == degree == 0
+        u = Int[]
+        vertex(cube, u).generators
+    else 
+        bits = Utils.bitseq(n, degree)
+        reduce(1 : length(bits); init=[]) do res, i
+            u = digits(bits[i], base=2, pad=n)
+            gens = vertex(cube, u).generators
+            append!(res, gens)
         end
     end
 end
@@ -48,63 +63,43 @@ function differential(C::KhComplex{R}, k::Int) :: SpMatrix{R} where {R <: RingEl
     end
 end
 
-function _chainGenerators(cube::KhCube{R}, degree::Int) :: Vector{ Tuple{ State, Vector{KhChainGenerator} } } where {R <: RingElement} 
-    n = dim(cube)
-
-    if degree ∉ 0 : n
-        []
-    elseif n == degree == 0
-        u = Int[]
-        [(u, vertex(cube, u).generators)]
-    else 
-        vertices = Utils.bitseq(n, degree)
-        reduce(1 : length(vertices); init=[]) do res, i
-            u = digits(vertices[i], base=2, pad=n)
-            gens = vertex(cube, u).generators
-            push!(res, (u, gens))
-        end
-    end
-end
-
-function _indexDict(gens::Vector) :: Dict{KhChainGenerator, Int} 
-    res = Dict()
-    for (_, g) in gens
-        N = length(res)
-        merge!(res, Dict( g[i] => N + i for i in 1:length(g)) )
-    end
-    res
-end
-
 function _differential(cube::KhCube{R}, degree::Int) :: SpMatrix{R} where {R <: RingElement}
     k = degree
+
     Gₖ   = _chainGenerators(cube, k)
     Gₖ₊₁ = _chainGenerators(cube, k + 1)
+
+    n = length(Gₖ)
+    m = length(Gₖ₊₁)
+
+    gDict = _generatorsDict(Gₖ₊₁)
+    vDict = Dict()
     
     Is = Vector{Int}()
     Js = Vector{Int}()
     Vs = Vector{R}()
 
-    m = reduce( (res, e) -> res + length(e[2]), Gₖ₊₁, init=0)
-    n = reduce( (res, e) -> res + length(e[2]), Gₖ,   init=0)
+    for j in 1 : n 
+        x = Gₖ[j]
+        u = x.state
+        vs = get!(vDict, u) do 
+            nextVertices(cube, u)
+        end
 
-    dict = _indexDict(Gₖ₊₁)
-    j = 1
-    
-    for (u, xs) in Gₖ 
-        vs = nextVertices(cube, u)
-        for x in xs
-            for v in vs
-                ys = edgeMap(cube, u, v, x)
-                for (y, r) in ys
-                    i = dict[y]
-                    push!(Is, i)
-                    push!(Js, j)
-                    push!(Vs, r)
-                end
+        for v in vs
+            ys = edgeMap(cube, u, v, x)
+            for (y, r) in ys
+                i = gDict[y]
+                push!(Is, i)
+                push!(Js, j)
+                push!(Vs, r)
             end
-            j += 1
         end
     end
     
     sparse(Is, Js, Vs, m, n)
+end
+
+function _generatorsDict(gens::Vector{KhChainGenerator}) :: Dict{KhChainGenerator, Int} 
+    Dict( gens[i] => i for i in 1 : length(gens) )
 end
