@@ -46,20 +46,23 @@ end
 
 function compute(H::KhHomology{R}, k::Int) :: KhHomologySummand{R} where {R <: RingElement}
     
-    #          Aₖ₋₁        Aₖ
-    #     Cₖ₋₁ -----> Cₖ ------> Cₖ₊₁
-    #     ^           | 
-    #   Q |           | P 
-    #     |    Sₖ₋₁   V
-    #     Cₖ₋₁ -----> Cₖ¹  \ 
-    #                 ⊕    | Zₖ
-    #                 Cₖ²  /
-    #                 ⊕    Sₖ
-    #                 Cₖ³ -----> Cₖ₊₁
+    #           dₖ₋₁          dₖ
+    #     Cₖ₋₁ -------> Cₖ --------> Cₖ₊₁
+    #     :             :            :
+    #     :     Aₖ₋₁    :      Aₖ     :
+    #     Rⁿ ---------> Rᵐ --------> Rᵖ
+    #     |             ^            | Pₖ
+    #     |          Qₖ |      Sₖ     V
+    #     |             Rʳ --------> Rʳ ⊕ ..
+    #     |             ⊕ 
+    #     |             Rᶠ \ 
+    #     |     Sₖ₋₁    ⊕   | Zₖ
+    #     Rᵗ ---------> Rᵗ /
+    #     ⊕
+    #     :
     #
-    #   Hₖ = Ker(Aₖ) / Im(Aₖ₋₁)
-    #      ≅ Cₖ¹/Im(Sₖ₋₁) ⊕ Cₖ²
-    #        ~~~ tor ~~~   ~~ free
+    #    Hₖ = Ker(dₖ) / Im(dₖ₋₁)
+    #       ≅ Rᶠ ⊕ Rᵗ/Im(Sₖ₋₁)
 
     nₖ = length(chainGenerators(H.complex, k))
     nₖ == 0 && return zero(KhHomologySummand{R})
@@ -70,10 +73,10 @@ function compute(H::KhHomology{R}, k::Int) :: KhHomologySummand{R} where {R <: R
     rₖ₋₁ = length(Fₖ₋₁.S)
     rₖ   = length(Fₖ.S)
     
-    bₖ = nₖ - rₖ₋₁ - rₖ
+    fₖ = nₖ - rₖ₋₁ - rₖ
     tors = filter(r -> !is_unit(r), Fₖ₋₁.S)
 
-    KhHomologySummand(bₖ, tors)
+    KhHomologySummand(fₖ, tors)
 end
 
 function _snf(H::KhHomology{R}, k::Int) :: SNF{R} where {R <: RingElement}
