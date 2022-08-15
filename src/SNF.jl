@@ -4,13 +4,10 @@ using SparseArrays: SparseMatrixCSC
 # SNF
 
 struct SNF{R <: RingElement}
-    diag::Vector{R}
-
     # PAQ = S
+    S::Vector{R}
     P::SparseMatrixCSC{R}
-    P⁻¹::SparseMatrixCSC{R}
     Q::SparseMatrixCSC{R}
-    Q⁻¹::SparseMatrixCSC{R}
 end
 
 function snf(A::SparseMatrixCSC{R}, ref::R) :: SNF{R} where {R <: RingElement}
@@ -20,13 +17,11 @@ function snf(A::SparseMatrixCSC{R}, ref::R) :: SNF{R} where {R <: RingElement}
     Aᵈ = _toDense(A, ref)
     (Sᵈ, Pᵈ, Qᵈ) = AbstractAlgebra.snf_with_transform(Aᵈ) # PAQ = S
 
-    diag = filter(!iszero, map( i -> Sᵈ[i, i], 1 : r ))
+    S = filter(!iszero, map( i -> Sᵈ[i, i], 1 : r ))
     P = _toSparse(Pᵈ)
     Q = _toSparse(Qᵈ)
-    P⁻¹ = _toSparse(inv(Pᵈ))
-    Q⁻¹ = _toSparse(inv(Qᵈ))
 
-    SNF(diag, P, P⁻¹, Q, Q⁻¹)
+    SNF(S, P, Q)
 end
 
 function _toDense(A::SparseMatrixCSC{R}, ref::R) :: AbstractAlgebra.MatrixElem where {R <: RingElement}

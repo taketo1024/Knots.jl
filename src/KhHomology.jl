@@ -44,43 +44,43 @@ function hDegRange(H::KhHomology{R}) :: UnitRange{Int} where {R <: RingElement}
 end
 
 function compute(H::KhHomology{R}, k::Int) :: KhHomologySummand{R} where {R <: RingElement}
+    
     #          Aₖ₋₁        Aₖ
     #     Cₖ₋₁ -----> Cₖ ------> Cₖ₊₁
     #     ^           | 
     #   Q |           | P 
-    #     |    Dₖ₋₁   V
-    #     Cₖ₋₁ -----> Cₖ' 
-    #                 ⊕    Bₖ
-    #                 Cₖ''-----> Cₖ₊₁
+    #     |    Sₖ₋₁   V
+    #     Cₖ₋₁ -----> Cₖ¹  \ 
+    #                 ⊕    | Zₖ
+    #                 Cₖ²  /
+    #                 ⊕    Sₖ
+    #                 Cₖ³ -----> Cₖ₊₁
     #
-    #   Hₖ = Ker(dₖ) / Im(dₖ₋₁)
-    #      ≅ Ker(Dₖ) ⊕ Coker(Dₖ₋₁)
-    #         ^ free    ^ tor
+    #   Hₖ = Ker(Aₖ) / Im(Aₖ₋₁)
+    #      ≅ Cₖ¹/Im(Sₖ₋₁) ⊕ Cₖ²
+    #        ~~~ tor ~~~   ~~ free
 
-    str = H.complex.cube.structure
-    ref = str.h
-
-    Aₖ = differential(H.complex, k)
-    nₖ = size(Aₖ)[2]
+    nₖ = length(chainGenerators(H.complex, k))
     nₖ == 0 && return zero(KhHomologySummand{R})
 
-    # TODO: use cache
-    Aₖ₋₁ = differential(H.complex, k - 1)
-    Fₖ₋₁ = snf(Aₖ₋₁, ref)
+    Fₖ₋₁ = _snf(H, k - 1)
+    Fₖ   = _snf(H, k)
 
-    # non-zero diagonal entries of SNF(Dₖ₋₁)
-    eₖ₋₁ = Fₖ₋₁.diag
-    rₖ₋₁ = length(eₖ₋₁)
+    rₖ₋₁ = length(Fₖ₋₁.S)
+    rₖ   = length(Fₖ.S)
+    
+    bₖ = nₖ - rₖ₋₁ - rₖ
+    tors = filter(r -> !is_unit(r), Fₖ₋₁.S)
 
-    P⁻¹ = Fₖ₋₁.P⁻¹
-    Bₖ = Aₖ * view(P⁻¹, :, rₖ₋₁ + 1 : nₖ)
-    Fₖ = snf(Bₖ, ref)
-    rₖ = length(filter(r -> !iszero(r), Fₖ.diag))
+    KhHomologySummand(bₖ, tors)
+end
 
-    zₖ = nₖ - rₖ₋₁ - rₖ
-    tors = filter(r -> !is_unit(r), eₖ₋₁)
-
-    KhHomologySummand(zₖ, tors)
+function _snf(H::KhHomology{R}, k::Int) :: SNF{R} where {R <: RingElement}
+    get!(H._SNFCache, k) do 
+        Aₖ = differential(H.complex, k)
+        ref = H.complex.cube.structure.h
+        snf(Aₖ, ref)
+    end
 end
 
 function asString(H::KhHomology{R}) :: String where {R <: RingElement}
