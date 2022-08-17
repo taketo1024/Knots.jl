@@ -1,13 +1,13 @@
 module Khovanov 
 
-include("Utils.jl")
-include("SNF.jl")
-include("Links.jl")
-include("Jones.jl")
-include("KhAlgebra.jl")
-include("KhChain.jl")
-include("KhCube.jl")
-include("KhComplex.jl")
-include("KhHomology.jl")
+include("Utils/Utils.jl")
+include("Matrix/SNF.jl")
+include("Links/Links.jl")
+include("Links/Jones.jl")
+include("KhHomology/KhAlgebra.jl")
+include("KhHomology/KhChain.jl")
+include("KhHomology/KhCube.jl")
+include("KhHomology/KhComplex.jl")
+include("KhHomology/KhHomology.jl")
 
 end # module Khovanov
