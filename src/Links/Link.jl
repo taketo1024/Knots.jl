@@ -166,7 +166,7 @@ function crossings(l::Link) :: Vector{Crossing}
 end
 
 function writhe(l::Link) :: Int 
-    sum(+, _crossingSigns(l), init=0)
+    sum(_crossingSigns(l))
 end
 
 function signedCrossingNums(l::Link) :: Tuple{Int, Int}

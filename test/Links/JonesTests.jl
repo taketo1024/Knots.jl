@@ -3,9 +3,9 @@ using Test
 @testset "Jones" begin
     using Polynomials
     using Khovanov.Links: Link, emptyLink, unknot, trefoil, figure8, hopfLink
-    using Khovanov.Links: jonesPolynomial, P
+    using Khovanov.Links: JonesPolynomial, jonesPolynomial
 
-    q = variable(P)
+    q = variable(JonesPolynomial)
 
     @testset "empty" begin
         l = emptyLink
