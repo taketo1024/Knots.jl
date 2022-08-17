@@ -38,17 +38,17 @@ end
 
 # KhCube
 
-struct KhCube{R <: RingElement, RR <: Ring} 
+struct KhCube{R<:RingElement, RR<:Ring} 
     structure::KhAlgStructure{R, RR}
     link::Link
     _vertexCache::Dict{State, KhCubeVertex}
     _edgeCache::Dict{Tuple{State, State}, Union{mergeEdge, splitEdge}}
-end
 
-function KhCube(str::KhAlgStructure, l::Link)
-    vCache = Dict{State, KhCubeVertex}()
-    eCache = Dict{Tuple{State, State}, Union{mergeEdge, splitEdge}}()
-    KhCube(str, l, vCache, eCache)
+    KhCube(str::KhAlgStructure{R, RR}, l::Link) where {R, RR} = begin
+        vCache = Dict{State, KhCubeVertex}()
+        eCache = Dict{Tuple{State, State}, Union{mergeEdge, splitEdge}}()
+        new{R, RR}(str, l, vCache, eCache)
+    end
 end
 
 function dim(cube::KhCube)

@@ -6,12 +6,18 @@ using ..Utils
 
 const KhComplexMatrix = SparseMatrixCSC
 
-struct KhComplex{R <: RingElement, RR <: Ring} <: AbstractComplex{R, RR}
+struct KhComplex{R<:RingElement, RR<:Ring} <: AbstractComplex{R, RR}
     link::Link
     cube::KhCube{R, RR}
     degShift::Tuple{Int, Int}
     _generatorsCache::Dict{Int, Vector{KhChainGenerator}}
     _differentialCache::Dict{Int, KhComplexMatrix{R}}
+
+    KhComplex(l::Link, cube::KhCube{R, RR}, degShift::Tuple{Int, Int}) where {R, RR} = begin
+        gCache = Dict{Int, Vector{KhChainGenerator}}()
+        mCache = Dict{Int, KhComplexMatrix{R}}()
+        new{R, RR}(l, cube, degShift, gCache, mCache)
+    end
 end
 
 KhComplex(str::KhAlgStructure{R}, l::Link; shift=true) where {R <: RingElement} = begin 
@@ -22,9 +28,7 @@ KhComplex(str::KhAlgStructure{R}, l::Link; shift=true) where {R <: RingElement} 
     else
         (0, 0)
     end
-    gCache = Dict{Int, Vector{KhChainGenerator}}()
-    mCache = Dict{Int, KhComplexMatrix{R}}()
-    KhComplex(l, cube, degShift, gCache, mCache)
+    KhComplex(l, cube, degShift)
 end
 
 function Homology.baseRing(C::KhComplex{R, RR}) :: RR where {R, RR<:Ring}
