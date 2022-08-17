@@ -1,5 +1,5 @@
-using AbstractAlgebra: RingElement, Ring
-using .Matrix: SNF, snf
+using AbstractAlgebra: RingElement, Ring, is_unit
+using ..Matrix: SNF, snf
 
 #  Homology computations:
 #

@@ -3,11 +3,11 @@ using AbstractAlgebra: RingElement, Ring
 abstract type AbstractComplex{R<:RingElement, RR<:Ring} end
 
 function baseRing(C::AbstractComplex{R, RR}) :: RR where {R, RR <: Ring}
-    throw(MethodError(degRange, (C,)))
+    throw(MethodError(baseRomg, (C,)))
 end
 
 function hDegRange(C::AbstractComplex) :: UnitRange{Int}
-    throw(MethodError(degRange, (C,)))
+    throw(MethodError(hDegRange, (C,)))
 end
 
 function generators(C::AbstractComplex, k::Int) :: Vector{Any}

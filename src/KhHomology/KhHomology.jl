@@ -1,6 +1,8 @@
 using AbstractAlgebra: RingElement, Ring
 using SparseArrays
 using .Links: Link
+using .Matrix: SNF
+using .Homology
 using .Utils
 
 struct KhHomologySummand{R<:RingElement, RR<:Ring} <: AbstractHomologySummand{R, RR}
@@ -9,9 +11,9 @@ struct KhHomologySummand{R<:RingElement, RR<:Ring} <: AbstractHomologySummand{R,
     torsions::Vector{R}
 end
 
-baseRing(s::KhHomologySummand) = s.baseRing
-rank(s::KhHomologySummand) = s.rank
-torsions(s::KhHomologySummand) = s.torsions
+Homology.baseRing(s::KhHomologySummand) = s.baseRing
+Homology.rank(s::KhHomologySummand) = s.rank
+Homology.torsions(s::KhHomologySummand) = s.torsions
 
 # KhHomology
 
@@ -27,22 +29,20 @@ KhHomology(str::KhAlgStructure{R, RR}, l::Link; shift=true) where {R, RR} = begi
     KhHomology{R, RR}(l, C, sCache)
 end
 
-function complex(H::KhHomology{R, RR}) :: KhComplex{R, RR} where {R, RR}
+Homology.complex(H::KhHomology) = 
     H.complex
-end
 
-function makeSummand(H::KhHomology{R, RR}, rank::Int, torsions::Vector{R}) :: KhHomologySummand{R, RR} where {R, RR}
+Homology.makeSummand(H::KhHomology, rank::Int, torsions::Vector) = 
     KhHomologySummand(baseRing(H), rank, torsions)
+
+function Homology.compute(H::KhHomology{R, RR}, k::Int) :: KhHomologySummand{R, RR} where {R, RR}
+    Homology.compute_single(H, k)
 end
 
-function compute(H::KhHomology{R, RR}, k::Int) :: KhHomologySummand{R, RR} where {R, RR}
-    compute_single(H, k)
-end
-
-function asString(H::KhHomology) :: String
+function Homology.asString(H::KhHomology) :: String
     l = H.complex.cube.link
     A = H.complex.cube.structure
-    str = invoke(asString, Tuple{AbstractHomology}, H)
+    str = invoke(Homology.asString, Tuple{AbstractHomology}, H)
     lines = ["L = $l", A, "---", str]
     join(lines, "\n")
 end

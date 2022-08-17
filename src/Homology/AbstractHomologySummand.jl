@@ -1,4 +1,5 @@
 using AbstractAlgebra: RingElement, Ring
+using ..Utils
 
 abstract type AbstractHomologySummand{R<:RingElement, RR<:Ring} end
 

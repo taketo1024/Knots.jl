@@ -1,6 +1,6 @@
 using AbstractAlgebra
 using AbstractAlgebra: Ring
-using SparseArrays: SparseMatrixCSC
+using SparseArrays: SparseMatrixCSC, findnz
 
 # SNF
 

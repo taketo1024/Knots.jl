@@ -1,6 +1,7 @@
 using AbstractAlgebra: RingElement, Ring
 using SparseArrays
 using .Links: Link, crossingNum, signedCrossingNums
+using .Homology
 using .Utils
 
 const KhComplexMatrix = SparseMatrixCSC
@@ -26,20 +27,27 @@ KhComplex(str::KhAlgStructure{R}, l::Link; shift=true) where {R <: RingElement} 
     KhComplex(l, cube, degShift, gCache, mCache)
 end
 
-function baseRing(C::KhComplex{R, RR}) :: RR where {R, RR<:Ring}
+function Homology.baseRing(C::KhComplex{R, RR}) :: RR where {R, RR<:Ring}
     C.cube.structure.baseRing
 end
 
-function hDegRange(C::KhComplex) :: UnitRange{Int}
+function Homology.hDegRange(C::KhComplex) :: UnitRange{Int}
     n = crossingNum(C.link)
     base = C.degShift[1] # <= 0
     base : base + n
 end
 
-function generators(C::KhComplex, k::Int) :: Vector{KhChainGenerator}
+function Homology.generators(C::KhComplex, k::Int) :: Vector{KhChainGenerator}
     get!(C._generatorsCache, k) do 
         base = C.degShift[1] # <= 0
         _generators(C.cube, k - base)
+    end
+end
+
+function Homology.differential(C::KhComplex{R}, k::Int) :: KhComplexMatrix{R} where {R <: RingElement}
+    get!(C._differentialCache, k) do 
+        base = C.degShift[1] # <= 0
+        _differential(C.cube, k - base)
     end
 end
 
@@ -58,13 +66,6 @@ function _generators(cube::KhCube, degree::Int) :: Vector{KhChainGenerator}
             gens = vertex(cube, u).generators
             append!(res, gens)
         end
-    end
-end
-
-function differential(C::KhComplex{R}, k::Int) :: KhComplexMatrix{R} where {R <: RingElement}
-    get!(C._differentialCache, k) do 
-        base = C.degShift[1] # <= 0
-        _differential(C.cube, k - base)
     end
 end
 
