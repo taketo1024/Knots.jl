@@ -1,4 +1,5 @@
 using AbstractAlgebra: RingElement, Ring
+using .Matrix: SNF, snf
 
 #  Homology computations:
 #

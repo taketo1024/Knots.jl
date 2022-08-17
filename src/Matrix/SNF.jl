@@ -2,8 +2,6 @@ using AbstractAlgebra
 using AbstractAlgebra: Ring
 using SparseArrays: SparseMatrixCSC
 
-include("snf_x.jl")
-
 # SNF
 
 struct SNF{R <: RingElement}

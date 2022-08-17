@@ -1,6 +1,6 @@
 using AbstractAlgebra: RingElement, Ring
 
-abstract type AbstractHomologySummand{R<:RingElement, RR<:AbstractAlgebra.Ring} end
+abstract type AbstractHomologySummand{R<:RingElement, RR<:Ring} end
 
 function baseRing(s::AbstractHomologySummand{R, RR}) :: RR where {R, RR <: Ring}
     throw(MethodError(AbstractHomologySummand, (s,)))

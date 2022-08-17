@@ -7,7 +7,8 @@
 # licensed under the Simplified "2-clause" BSD License.
 # https://github.com/Nemocas/AbstractAlgebra.jl/blob/master/LICENSE.md
 
-using AbstractAlgebra: kb_search_first_pivot, swap_rows!, div
+using AbstractAlgebra
+using AbstractAlgebra: RingElement, MatrixElem, kb_search_first_pivot, swap_rows!, div
 
 function hnf_x(A::MatrixElem{T}; flags=(true, true)) where {T <: RingElement}
     H = deepcopy(A)
