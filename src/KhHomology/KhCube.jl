@@ -1,4 +1,4 @@
-using AbstractAlgebra
+using AbstractAlgebra: RingElement, Ring
 
 # KhCubeVertex
 
@@ -37,24 +37,24 @@ end
 
 # KhCube
 
-struct KhCube{R <: RingElement} 
-    structure::KhAlgStructure{R}
+struct KhCube{R <: RingElement, RR <: Ring} 
+    structure::KhAlgStructure{R, RR}
     link::Link
     _vertexCache::Dict{State, KhCubeVertex}
     _edgeCache::Dict{Tuple{State, State}, Union{mergeEdge, splitEdge}}
 end
 
-function KhCube(str::KhAlgStructure{R}, l::Link) where {R <: RingElement} 
+function KhCube(str::KhAlgStructure, l::Link)
     vCache = Dict{State, KhCubeVertex}()
     eCache = Dict{Tuple{State, State}, Union{mergeEdge, splitEdge}}()
-     KhCube(str, l, vCache, eCache)
+    KhCube(str, l, vCache, eCache)
 end
 
-function dim(cube::KhCube{R}) where {R <: RingElement} 
+function dim(cube::KhCube)
     crossingNum(cube.link)
 end
 
-function vertex(cube::KhCube{R}, u::State) :: KhCubeVertex where {R <: RingElement}
+function vertex(cube::KhCube, u::State) :: KhCubeVertex
     @assert length(u) == dim(cube)
 
     get!(cube._vertexCache, u) do 
@@ -62,7 +62,7 @@ function vertex(cube::KhCube{R}, u::State) :: KhCubeVertex where {R <: RingEleme
     end
 end
 
-function nextVertices(cube::KhCube{R}, u::State) :: Vector{State} where {R <: RingElement}
+function nextVertices(cube::KhCube, u::State) :: Vector{State}
     @assert length(u) == dim(cube)
 
     n = length(u)
@@ -75,10 +75,10 @@ function nextVertices(cube::KhCube{R}, u::State) :: Vector{State} where {R <: Ri
 end
 
 # TODO: move to Utils
-Base.findfirst(arr::AbstractArray{T, N}, elm::T) where {T, N} = 
+Base.findfirst(arr::AbstractArray{T}, elm::T) where {T} = 
     findfirst( x -> x == elm, arr )
 
-function edgeSign(cube::KhCube{R}, u::State, v::State) :: Int where {R <: RingElement}
+function edgeSign(cube::KhCube, u::State, v::State) :: Int
     @assert length(u) == length(v) == dim(cube)
     @assert sum(u) + 1 == sum(v)
 
@@ -90,13 +90,13 @@ function edgeSign(cube::KhCube{R}, u::State, v::State) :: Int where {R <: RingEl
     (-1)^isodd(k)
 end
 
-function edge(cube::KhCube{R}, u::State, v::State) :: Union{mergeEdge, splitEdge} where {R <: RingElement}
+function edge(cube::KhCube, u::State, v::State) :: Union{mergeEdge, splitEdge}
     get!(cube._edgeCache, (u, v)) do 
         _edge(cube, u, v)
     end
 end
 
-function _edge(cube::KhCube{R}, u::State, v::State) :: Union{mergeEdge, splitEdge} where {R <: RingElement}
+function _edge(cube::KhCube, u::State, v::State) :: Union{mergeEdge, splitEdge}
     @assert length(u) == length(v) == dim(cube)
     @assert sum(u) + 1 == sum(v)
 
@@ -147,7 +147,7 @@ function _mergeEdgeMap(cube::KhCube{R}, edg::mergeEdge, v::State, x::KhChainGene
     (e, (i, j), k) = (edg.sign, edg.from, edg.to)
     (xᵢ, xⱼ) = (x.label[i], x.label[j])
 
-    res = map(m(xᵢ, xⱼ)) do (yₖ, r) 
+    map(m(xᵢ, xⱼ)) do (yₖ, r) 
         label = copy(x.label)
         deleteat!(label, j)
         deleteat!(label, i)
