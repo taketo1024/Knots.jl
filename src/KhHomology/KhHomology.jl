@@ -8,7 +8,7 @@ struct KhHomologySummand{R <: RingElement, RR <: AbstractAlgebra.Ring}
     torsions::Vector{R}
 end
 
-function asString(s::KhHomologySummand{R}) :: String where {R}
+function asString(s::KhHomologySummand) :: String
     iszero(s) && return "⋅"
     symbol = Utils.symbol(s.baseRing)
     res = (s.rank > 0) ? ["$symbol$( s.rank > 1 ? Utils.superscript(s.rank) : "" )"] : []
@@ -21,10 +21,10 @@ end
 Base.zero(::Type{KhHomologySummand{R}}) where {R <: RingElement} = 
     KhHomologySummand(ZZ, 0, R[])
 
-Base.iszero(s::KhHomologySummand{R}) where {R <: RingElement} = 
+Base.iszero(s::KhHomologySummand) = 
     (s.rank == 0 && isempty(s.torsions))
 
-Base.show(io::IO, s::KhHomologySummand{R}) where {R <: RingElement} = 
+Base.show(io::IO, s::KhHomologySummand) = 
     print(io, asString(s))
 
 # KhHomology
@@ -41,7 +41,7 @@ KhHomology(str::KhAlgStructure{R}, l::Link; shift=true) where {R <: RingElement}
     KhHomology(l, C, sCache)
 end
 
-function hDegRange(H::KhHomology{R}) :: UnitRange{Int} where {R <: RingElement}
+function hDegRange(H::KhHomology) :: UnitRange{Int}
     hDegRange(H.complex)
 end
 
@@ -90,7 +90,7 @@ function _snf(H::KhHomology{R}, k::Int) :: SNF{R} where {R <: RingElement}
     end
 end
 
-function asString(H::KhHomology{R}) :: String where {R <: RingElement}
+function asString(H::KhHomology) :: String
     l = H.complex.cube.link
     A = H.complex.cube.structure
     lines = ["L = $l", A, "---"]
@@ -102,8 +102,8 @@ function asString(H::KhHomology{R}) :: String where {R <: RingElement}
     join(lines, "\n")
 end
 
-Base.getindex(H::KhHomology{R}, k::Int) where {R <: RingElement} = 
+Base.getindex(H::KhHomology, k::Int) = 
     compute(H, k)
 
-Base.show(io::IO, H::KhHomology{R}) where {R <: RingElement} = 
+Base.show(io::IO, H::KhHomology) = 
     print(io, asString(H))
