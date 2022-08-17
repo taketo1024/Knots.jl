@@ -2,22 +2,24 @@ using AbstractAlgebra
 using SparseArrays
 using .Utils
 
-struct KhHomologySummand{R <: RingElement}
+struct KhHomologySummand{R <: RingElement, RR <: AbstractAlgebra.Ring}
+    baseRing::RR
     rank::Int
     torsions::Vector{R}
 end
 
-function asString(s::KhHomologySummand{R}; R_symbol="R") :: String where {R <: RingElement}
+function asString(s::KhHomologySummand{R}) :: String where {R}
     iszero(s) && return "⋅"
-    res = (s.rank > 0) ? ["$R_symbol$( s.rank > 1 ? Utils.superscript(s.rank) : "" )"] : []
+    symbol = Utils.symbol(s.baseRing)
+    res = (s.rank > 0) ? ["$symbol$( s.rank > 1 ? Utils.superscript(s.rank) : "" )"] : []
     for t in s.torsions
-        push!(res, "$R_symbol/$t")
+        push!(res, "$symbol/$t")
     end
     join(res, " ⊕ ")
 end
 
 Base.zero(::Type{KhHomologySummand{R}}) where {R <: RingElement} = 
-    KhHomologySummand{R}(0, R[])
+    KhHomologySummand(ZZ, 0, R[])
 
 Base.iszero(s::KhHomologySummand{R}) where {R <: RingElement} = 
     (s.rank == 0 && isempty(s.torsions))
@@ -63,6 +65,8 @@ function compute(H::KhHomology{R}, k::Int) :: KhHomologySummand{R} where {R <: R
     #    Hₖ = Ker(dₖ) / Im(dₖ₋₁)
     #       ≅ Rᶠ ⊕ Rᵗ/Im(Sₖ₋₁)
 
+    baseRing = H.complex.cube.structure.baseRing
+
     nₖ = length(chainGenerators(H.complex, k))
     nₖ == 0 && return zero(KhHomologySummand{R})
 
@@ -75,7 +79,7 @@ function compute(H::KhHomology{R}, k::Int) :: KhHomologySummand{R} where {R <: R
     fₖ = nₖ - rₖ₋₁ - rₖ
     tors = filter(r -> !is_unit(r), Fₖ₋₁.S)
 
-    KhHomologySummand(fₖ, tors)
+    KhHomologySummand(baseRing, fₖ, tors)
 end
 
 function _snf(H::KhHomology{R}, k::Int) :: SNF{R} where {R <: RingElement}
@@ -87,11 +91,12 @@ function _snf(H::KhHomology{R}, k::Int) :: SNF{R} where {R <: RingElement}
 end
 
 function asString(H::KhHomology{R}) :: String where {R <: RingElement}
-    L = H.complex.cube.link
+    l = H.complex.cube.link
     A = H.complex.cube.structure
-    lines = ["L = $L", A, "---"]
+    lines = ["L = $l", A, "---"]
     for i in hDegRange(H)
-        push!(lines, "H[$i] = $(asString(H[i]; A.R_symbol))")
+        Hi = asString(H[i])
+        push!(lines, "H[$i] = $Hi")
     end
     push!(lines, "---")
     join(lines, "\n")
