@@ -12,7 +12,10 @@ end
 
 function generators(C::AbstractComplex, k::Int) :: Vector{Any}
     throw(MethodError(generators, (C, k)))
-    Matrix
+end
+
+function differentialDegree(C::AbstractComplex) :: Int
+    +1
 end
 
 function differential(C::AbstractComplex{R}, k::Int) :: AbstractMatrix{R} where {R<:RingElement}
