@@ -31,13 +31,12 @@ struct KhHomology{R <: RingElement}
     link::Link
     complex::KhComplex{R}
     _SNFCache::Dict{Int, SNF{R}}
-    _withGenerators::Bool
 end
 
-KhHomology(str::KhAlgStructure{R}, l::Link; shift=true, withGenerators=false) where {R <: RingElement} = begin 
+KhHomology(str::KhAlgStructure{R}, l::Link; shift=true) where {R <: RingElement} = begin 
     C = KhComplex(str, l; shift=shift)
     sCache = Dict{Int, SNF{R}}()
-    KhHomology(l, C, sCache, withGenerators)
+    KhHomology(l, C, sCache)
 end
 
 function hDegRange(H::KhHomology{R}) :: UnitRange{Int} where {R <: RingElement}
@@ -83,8 +82,7 @@ function _snf(H::KhHomology{R}, k::Int) :: SNF{R} where {R <: RingElement}
     get!(H._SNFCache, k) do 
         Aₖ = differential(H.complex, k)
         baseRing = H.complex.cube.structure.baseRing
-        withTrans = H._withGenerators
-        snf(Aₖ, baseRing; withTrans)
+        snf(Aₖ, baseRing)
     end
 end
 
