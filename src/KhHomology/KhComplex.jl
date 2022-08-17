@@ -1,12 +1,12 @@
-using AbstractAlgebra
+using AbstractAlgebra: RingElement, Ring
 using SparseArrays
 using .Utils
 
 const SpMatrix = SparseMatrixCSC
 
-struct KhComplex{R <: RingElement}
+struct KhComplex{R <: RingElement, RR <: Ring}
     link::Link
-    cube::KhCube{R}
+    cube::KhCube{R, RR}
     degShift::Tuple{Int, Int}
     _generatorsCache::Dict{Int, Vector{KhChainGenerator}}
     _differentialCache::Dict{Int, SpMatrix{R}}
@@ -25,20 +25,20 @@ KhComplex(str::KhAlgStructure{R}, l::Link; shift=true) where {R <: RingElement} 
     KhComplex(l, cube, degShift, gCache, mCache)
 end
 
-function hDegRange(C::KhComplex{R}) :: UnitRange{Int} where {R <: RingElement}
+function hDegRange(C::KhComplex) :: UnitRange{Int}
     n = crossingNum(C.link)
     base = C.degShift[1] # <= 0
     base : base + n
 end
 
-function chainGenerators(C::KhComplex{R}, k::Int) :: Vector{KhChainGenerator} where {R <: RingElement} 
+function chainGenerators(C::KhComplex, k::Int) :: Vector{KhChainGenerator}
     get!(C._generatorsCache, k) do 
         base = C.degShift[1] # <= 0
         _chainGenerators(C.cube, k - base)
     end
 end
 
-function _chainGenerators(cube::KhCube{R}, degree::Int) :: Vector{KhChainGenerator} where {R <: RingElement} 
+function _chainGenerators(cube::KhCube, degree::Int) :: Vector{KhChainGenerator}
     n = dim(cube)
 
     if degree ∉ 0 : n
@@ -56,7 +56,7 @@ function _chainGenerators(cube::KhCube{R}, degree::Int) :: Vector{KhChainGenerat
     end
 end
 
-function differential(C::KhComplex{R}, k::Int) :: SpMatrix{R} where {R <: RingElement} 
+function differential(C::KhComplex{R}, k::Int) :: SpMatrix{R} where {R <: RingElement}
     get!(C._differentialCache, k) do 
         base = C.degShift[1] # <= 0
         _differential(C.cube, k - base)
