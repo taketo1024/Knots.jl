@@ -30,4 +30,24 @@ module Utils
         end
         join(c)
     end
+
+    using AbstractAlgebra
+    function symbol(R::RR) :: String where {RR <: AbstractAlgebra.Ring}
+        if isa(R, AbstractAlgebra.Integers)
+            "Z"
+        elseif isa(R, AbstractAlgebra.Rationals)
+            "Q"
+        elseif isa(R, AbstractAlgebra.GFField)
+            p = characteristic(R)
+            "F$(subscript(p))"
+        elseif isa(R, AbstractAlgebra.PolyRing) || isa(R, AbstractAlgebra.MPolyRing)
+            S = base_ring(R)
+            vars = collect(AbstractAlgebra.symbols(R))
+            S_str = symbol(S)
+            vars_str = join( map( x -> string(x), vars ), ",")
+            "$(S_str)[$(vars_str)]"
+        else
+            "R"
+        end
+    end
 end

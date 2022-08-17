@@ -22,19 +22,18 @@ Base.show(io::IO, x::KhAlgGenerator) =
 # Structure of A = R[X]/(X^2 - hX - t)
 
 struct KhAlgStructure{R <: RingElement, RR <: Ring}
+    baseRing::RR
     h::R
     t::R
-    baseRing::RR
-    R_symbol::String
 end
 
-KhAlgStructure(h::R, t::R; R_symbol="R") where {R <: RingElement} = begin
-    KhAlgStructure(h, t, parent(h), R_symbol)
+KhAlgStructure(h::R, t::R) where {R <: RingElement} = begin
+    KhAlgStructure(parent(h), h, t)
 end
 
 KhAlgStructure(name::String) = begin
-    (h, t, baseRing, R_symbol) = _selectAlgStructure(name)
-    KhAlgStructure(h, t, baseRing, R_symbol)
+    (R, h, t) = _selectAlgStructure(name)
+    KhAlgStructure(R, h, t)
 end
 
 function product(A::KhAlgStructure{R}) where {R <: RingElement}
@@ -75,7 +74,7 @@ function coproduct(A::KhAlgStructure{R}) where {R <: RingElement}
 end
 
 function asString(A::KhAlgStructure{R}) :: String where {R <: RingElement} 
-    "R = $(A.R_symbol), (h, t) = ($(A.h), $(A.t))"
+    "R = $(Utils.symbol(A.baseRing)), (h, t) = ($(A.h), $(A.t))"
 end
 
 function _selectAlgStructure(name::String) 
@@ -84,40 +83,40 @@ function _selectAlgStructure(name::String)
     F2 = AbstractAlgebra.GF(2)
     F3 = AbstractAlgebra.GF(3)
 
-    (R, R_symbol) = if startswith(name, "Z-")
-        (Z, "Z")
+    (R) = if startswith(name, "Z-")
+        Z
     elseif startswith(name, "Q-")
-        (Q, "Q")
+        Q
     elseif startswith(name, "F2-")
-        (F2, "F₂")
+        F2
     elseif startswith(name, "F3-")
-        (F3, "F₃")
+        F3
     elseif startswith(name, "Z[h]-")
-        (PolynomialRing(ZZ, :h)[1], "Z[h]")
+        PolynomialRing(ZZ, :h)[1]
     elseif startswith(name, "Q[h]-")
-        (PolynomialRing(QQ, :h)[1], "Q[h]")
+        PolynomialRing(QQ, :h)[1]
     elseif startswith(name, "F2[h]-")
-        (PolynomialRing(F2, :h)[1], "F₂[h]")
+        PolynomialRing(F2, :h)[1]
     elseif startswith(name, "F3[h]-")
-        (PolynomialRing(F3, :h)[1], "F₃[h]")
+        PolynomialRing(F3, :h)[1]
     elseif startswith(name, "Z[t]-")
-        (PolynomialRing(ZZ, :t)[1], "Z[t]")
+        PolynomialRing(ZZ, :t)[1]
     elseif startswith(name, "Q[t]-")
-        (PolynomialRing(QQ, :t)[1], "Q[t]")
+        PolynomialRing(QQ, :t)[1]
     elseif startswith(name, "F2[t]-")
-        (PolynomialRing(F2, :t)[1], "F₂[t]")
+        PolynomialRing(F2, :t)[1]
     elseif startswith(name, "F3[t]-")
-        (PolynomialRing(F3, :t)[1], "F₃[t]")
+        PolynomialRing(F3, :t)[1]
     elseif startswith(name, "Z[h,t]-")
-        (PolynomialRing(ZZ, [:h, :t])[1], "Z[h,t]")
+        PolynomialRing(ZZ, [:h, :t])[1]
     elseif startswith(name, "Q[h,t]-")
-        (PolynomialRing(QQ, [:h, :t])[1], "Q[h,t]")
+        PolynomialRing(QQ, [:h, :t])[1]
     elseif startswith(name, "F2[h,t]-")
-        (PolynomialRing(F2, [:h, :t])[1], "F₂[h,t]")
+        PolynomialRing(F2, [:h, :t])[1]
     elseif startswith(name, "F3[h,t]-")
-        (PolynomialRing(F3, [:h, :t])[1], "F₃[h,t]")
+        PolynomialRing(F3, [:h, :t])[1]
     else
-        (Z, "Z")
+        Z
     end
 
     (h, t) = if endswith(name, "Kh")
@@ -136,7 +135,7 @@ function _selectAlgStructure(name::String)
         throw(Exception)
     end
 
-    (h, t, parent(h), R_symbol)
+    (R, h, t)
 end
 
 Base.show(io::IO, A::KhAlgStructure{R}) where {R} = 
