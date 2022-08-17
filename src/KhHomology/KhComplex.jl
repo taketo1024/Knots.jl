@@ -31,14 +31,14 @@ function hDegRange(C::KhComplex) :: UnitRange{Int}
     base : base + n
 end
 
-function chainGenerators(C::KhComplex, k::Int) :: Vector{KhChainGenerator}
+function generators(C::KhComplex, k::Int) :: Vector{KhChainGenerator}
     get!(C._generatorsCache, k) do 
         base = C.degShift[1] # <= 0
-        _chainGenerators(C.cube, k - base)
+        _generators(C.cube, k - base)
     end
 end
 
-function _chainGenerators(cube::KhCube, degree::Int) :: Vector{KhChainGenerator}
+function _generators(cube::KhCube, degree::Int) :: Vector{KhChainGenerator}
     n = dim(cube)
 
     if degree ∉ 0 : n
@@ -66,8 +66,8 @@ end
 function _differential(cube::KhCube{R}, degree::Int) :: SpMatrix{R} where {R <: RingElement}
     k = degree
 
-    Gₖ   = _chainGenerators(cube, k)
-    Gₖ₊₁ = _chainGenerators(cube, k + 1)
+    Gₖ   = _generators(cube, k)
+    Gₖ₊₁ = _generators(cube, k + 1)
 
     n = length(Gₖ)
     m = length(Gₖ₊₁)

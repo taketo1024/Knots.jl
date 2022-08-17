@@ -67,7 +67,7 @@ function compute(H::KhHomology{R}, k::Int) :: KhHomologySummand{R} where {R <: R
 
     baseRing = H.complex.cube.structure.baseRing
 
-    nₖ = length(chainGenerators(H.complex, k))
+    nₖ = length(generators(H.complex, k))
     nₖ == 0 && return zero(KhHomologySummand{R})
 
     Fₖ₋₁ = _snf(H, k - 1)

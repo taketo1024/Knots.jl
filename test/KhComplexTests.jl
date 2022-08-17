@@ -1,7 +1,7 @@
 using Test
 
 @testset "KhComplex.jl" begin
-    using Khovanov: KhComplex, hDegRange, chainGenerators, differential, _chainGenerators
+    using Khovanov: KhComplex, hDegRange, generators, differential, _generators
     using Khovanov: KhCube, KhAlgStructure
     using Khovanov: Link, emptyLink, unknot, trefoil, hopfLink, mirror
 
@@ -14,7 +14,7 @@ using Test
 
         @test C.degShift == (0, 0)
         @test hDegRange(C) == 0:0
-        @test length(chainGenerators(C, 0)) == 1
+        @test length(generators(C, 0)) == 1
         @test size(differential(C, 0)) == (0, 1)
     end
 
@@ -24,7 +24,7 @@ using Test
 
         @test C.degShift == (0, 0)
         @test hDegRange(C) == 0:0
-        @test length(chainGenerators(C, 0)) == 2
+        @test length(generators(C, 0)) == 2
         @test size(differential(C, 0)) == (0, 2)
     end
 
@@ -34,8 +34,8 @@ using Test
 
         @test C.degShift == (0, 1)
         @test hDegRange(C) == 0:1
-        @test length(chainGenerators(C, 0)) == 4
-        @test length(chainGenerators(C, 1)) == 2
+        @test length(generators(C, 0)) == 4
+        @test length(generators(C, 1)) == 2
         @test size(differential(C, 0)) == (2, 4)
     end
 
@@ -45,8 +45,8 @@ using Test
 
         @test C.degShift == (-1, -2)
         @test hDegRange(C) == -1:0
-        @test length(chainGenerators(C, -1)) == 2
-        @test length(chainGenerators(C,  0)) == 4
+        @test length(generators(C, -1)) == 2
+        @test length(generators(C,  0)) == 4
         @test size(differential(C, -1)) == (4, 2)
     end
 
@@ -56,9 +56,9 @@ using Test
 
         @test C.degShift == (-1, -1)
         @test hDegRange(C) == -1:1
-        @test length(chainGenerators(C, -1)) == 4
-        @test length(chainGenerators(C,  0)) == 10
-        @test length(chainGenerators(C,  1)) == 4
+        @test length(generators(C, -1)) == 4
+        @test length(generators(C,  0)) == 10
+        @test length(generators(C,  1)) == 4
 
         D₋₁ = differential(C, -1)
         D₀  = differential(C,  0)
@@ -74,9 +74,9 @@ using Test
 
         @test C.degShift == (-2, -4)
         @test hDegRange(C) == -2:0
-        @test length(chainGenerators(C, -2)) == 4
-        @test length(chainGenerators(C, -1)) == 4
-        @test length(chainGenerators(C,  0)) == 4
+        @test length(generators(C, -2)) == 4
+        @test length(generators(C, -1)) == 4
+        @test length(generators(C,  0)) == 4
 
         D₋₂ = differential(C, -2)
         D₋₁ = differential(C, -1)
@@ -92,10 +92,10 @@ using Test
 
         @test C.degShift == (0, 3)
         @test hDegRange(C) == 0:3
-        @test length(chainGenerators(C, 0)) == 4
-        @test length(chainGenerators(C, 1)) == 6
-        @test length(chainGenerators(C, 2)) == 12
-        @test length(chainGenerators(C, 3)) == 8
+        @test length(generators(C, 0)) == 4
+        @test length(generators(C, 1)) == 6
+        @test length(generators(C, 2)) == 12
+        @test length(generators(C, 3)) == 8
 
         D₀ = differential(C, 0)
         D₁ = differential(C, 1)
