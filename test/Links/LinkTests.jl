@@ -1,7 +1,7 @@
 using Test
 
 @testset "Link" begin
-    using Khovanov.Links: Link, isEmpty, crossingNum, signedCrossingNums, writhe, components, mirror, emptyLink, unknot, trefoil, figure8, hopfLink
+    using Knots.Links: Link, isEmpty, crossingNum, signedCrossingNums, writhe, components, mirror, emptyLink, unknot, trefoil, figure8, hopfLink
 
     @testset "emptyLink" begin
         l = emptyLink

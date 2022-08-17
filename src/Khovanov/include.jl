@@ -1,4 +1,4 @@
-module Kh
+module Khovanov
 
 include("KhAlgebra.jl")
 include("KhChain.jl")

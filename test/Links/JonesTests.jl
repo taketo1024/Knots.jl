@@ -2,8 +2,8 @@ using Test
 
 @testset "Jones" begin
     using Polynomials
-    using Khovanov.Links: Link, emptyLink, unknot, trefoil, figure8, hopfLink
-    using Khovanov.Links: JonesPolynomial, jonesPolynomial
+    using Knots.Links: Link, emptyLink, unknot, trefoil, figure8, hopfLink
+    using Knots.Links: JonesPolynomial, jonesPolynomial
 
     q = variable(JonesPolynomial)
 

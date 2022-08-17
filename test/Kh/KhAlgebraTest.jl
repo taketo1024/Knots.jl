@@ -1,7 +1,7 @@
 using Test
 
 @testset "KhAlgebra" begin
-    using Khovanov.Kh: KhAlgStructure, product, coproduct, X, I
+    using Knots.Khovanov: KhAlgStructure, product, coproduct, X, I
     
     @testset "type:Kh" begin
         A = KhAlgStructure(0, 0)

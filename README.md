@@ -1,1 +1,1 @@
-# Khovanov
+# Knots.jl

@@ -1,5 +1,5 @@
-using Khovanov.Links
-using Khovanov.Kh
+using Knots.Links
+using Knots.Khovanov
 
 types = [
     "Z-Kh", 

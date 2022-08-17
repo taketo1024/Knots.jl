@@ -2,8 +2,8 @@ using Test
 
 @testset "SNF" begin
     using AbstractAlgebra
-    using Khovanov.Matrix
-    using Khovanov.Matrix: kb_canonical_row_x!, kb_reduce_column_x!, hnf_x, snf_kb_x_step1!, snf_kb_x_step2!, snf_x
+    using Knots.Matrix
+    using Knots.Matrix: kb_canonical_row_x!, kb_reduce_column_x!, hnf_x, snf_kb_x_step1!, snf_kb_x_step2!, snf_x
     
     Z = zz
     Q = qq

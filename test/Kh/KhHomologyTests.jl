@@ -1,8 +1,8 @@
 using Test
 
 @testset "KhHomology" begin
-    using Khovanov.Kh: KhAlgStructure, KhHomology
-    using Khovanov.Links
+    using Knots.Khovanov: KhAlgStructure, KhHomology
+    using Knots.Links
 
     R = Int
     A = KhAlgStructure(0, 0)

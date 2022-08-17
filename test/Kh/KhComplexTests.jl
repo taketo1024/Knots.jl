@@ -1,9 +1,9 @@
 using Test
 
 @testset "KhComplex" begin
-    using Khovanov.Kh: KhComplex, hDegRange, generators, differential, _generators
-    using Khovanov.Kh: KhCube, KhAlgStructure
-    using Khovanov.Links
+    using Knots.Khovanov: KhComplex, hDegRange, generators, differential, _generators
+    using Knots.Khovanov: KhCube, KhAlgStructure
+    using Knots.Links
 
     R = Int
     A = KhAlgStructure(0, 0)
