@@ -1,8 +1,8 @@
 using AbstractAlgebra: RingElement, Ring
 using SparseArrays
-using .Links: Link, crossingNum, signedCrossingNums
-using .Homology
-using .Utils
+using ..Links: Link, crossingNum, signedCrossingNums
+using ..Homology
+using ..Utils
 
 const KhComplexMatrix = SparseMatrixCSC
 

@@ -1,5 +1,5 @@
 using AbstractAlgebra: RingElement, Ring
-using .Links: Link, State, Component, resolve, components, crossingNum
+using ..Links: Link, State, Component, resolve, components, crossingNum
 
 # KhCubeVertex
 

@@ -1,6 +1,6 @@
 using AbstractAlgebra
 using AbstractAlgebra: Ring
-using .Utils
+using ..Utils
 
 # KhAlgGenerator
 # Generators of A = R[X]/(X^2 - hX - t) ≅ R<1, X>

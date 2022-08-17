@@ -1,9 +1,9 @@
 using Test
 
-@testset "KhCube.jl" begin
-    using Khovanov: KhCube, KhCubeVertex, vertex, nextVertices, edge, edgeSign, edgeMap, mergeEdge, splitEdge
-    using Khovanov: KhAlgStructure, KhAlgGenerator
-    using Khovanov.Links: Link, unknot, emptyLink, trefoil
+@testset "KhCube" begin
+    using Khovanov.Kh: KhCube, KhCubeVertex, vertex, nextVertices, edge, edgeSign, edgeMap, mergeEdge, splitEdge
+    using Khovanov.Kh: KhAlgStructure, KhAlgGenerator
+    using Khovanov.Links
 
     R = Int
     A = KhAlgStructure(0, 0)

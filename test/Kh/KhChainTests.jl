@@ -1,7 +1,7 @@
 using Test
 
-@testset "KhChain.jl" begin
-    using Khovanov: KhChainGenerator, KhChain, X, I, simplify!
+@testset "KhChain" begin
+    using Khovanov.Kh: KhChainGenerator, KhChain, X, I, simplify!
 
     R = Int
     C = KhChain{R}

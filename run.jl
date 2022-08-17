@@ -1,5 +1,5 @@
-using Khovanov: KhAlgStructure, KhHomology
 using Khovanov.Links
+using Khovanov.Kh
 
 types = [
     "Z-Kh", 
