@@ -36,7 +36,7 @@ KhAlgStructure(name::String) = begin
     KhAlgStructure(R, h, t)
 end
 
-function product(A::KhAlgStructure{R}) where {R <: RingElement}
+function product(A::KhAlgStructure)
     (x::KhAlgGenerator, y::KhAlgGenerator) -> begin
         (h, t) = (A.h, A.t)
         one = Base.one(A.baseRing)
@@ -57,7 +57,7 @@ function product(A::KhAlgStructure{R}) where {R <: RingElement}
     end
 end
 
-function coproduct(A::KhAlgStructure{R}) where {R <: RingElement} 
+function coproduct(A::KhAlgStructure)
     (x::KhAlgGenerator) -> begin
         (h, t) = (A.h, A.t)
         one = Base.one(A.baseRing)
@@ -73,7 +73,7 @@ function coproduct(A::KhAlgStructure{R}) where {R <: RingElement}
     end
 end
 
-function asString(A::KhAlgStructure{R}) :: String where {R <: RingElement} 
+function asString(A::KhAlgStructure) :: String
     "R = $(Utils.symbol(A.baseRing)), (h, t) = ($(A.h), $(A.t))"
 end
 
@@ -138,5 +138,5 @@ function _selectAlgStructure(name::String)
     (R, h, t)
 end
 
-Base.show(io::IO, A::KhAlgStructure{R}) where {R} = 
+Base.show(io::IO, A::KhAlgStructure) = 
     print(io, asString(A))

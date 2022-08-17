@@ -27,11 +27,11 @@ end
 
 KhChain(elems::AbstractVector, coefs::AbstractVector) = KhChain(Dict(zip(elems, coefs)))
 
-function mapCoeffs(f, c::KhChain{R}) :: KhChain{R} where {R <: RingElement}
+function mapCoeffs(f, c::KhChain) :: KhChain
     KhChain( Dict( k => f(v) for (k, v) in c.elements ) )
 end
 
-function asString(ch::KhChain{R}) where {R <: RingElement}
+function asString(ch::KhChain)
     if isempty(ch.elements)
         "0"
     else
@@ -39,7 +39,7 @@ function asString(ch::KhChain{R}) where {R <: RingElement}
     end
 end
 
-function simplify!(ch::KhChain{R}) where {R <: RingElement}
+function simplify!(ch::KhChain)
     for (k, v) in ch.elements
         iszero(v) && delete!(ch.elements, k)
     end
@@ -49,37 +49,37 @@ end
 Base.zero(::Type{KhChain{R}}) where {R <: RingElement} = 
     KhChain(Dict{KhChainGenerator, R}())
 
-Base.length(ch::KhChain{R}) where {R <: RingElement} = 
+Base.length(ch::KhChain) =
     length(ch.elements)
 
-Base.copy(ch::KhChain{R}) where {R <: RingElement} = 
-    KhChain{R}(ch.dim, copy(ch.elements))
+Base.copy(ch::KhChain) = 
+    KhChain(ch.dim, copy(ch.elements))
 
-Base.keys(ch::KhChain{R}) where {R <: RingElement} = 
+Base.keys(ch::KhChain) = 
     keys(ch.elements)
 
-Base.values(ch::KhChain{R}) where {R <: RingElement} = 
+Base.values(ch::KhChain) = 
     values(ch.elements)
 
-Base.getindex(ch::KhChain{R}, k::KhChainGenerator) where {R <: RingElement} = 
+Base.getindex(ch::KhChain, k::KhChainGenerator) = 
     getindex(ch.elements, k)
 
 Base.setindex!(ch::KhChain{R}, c::R, k::KhChainGenerator) where {R <: RingElement} = 
     setindex!(ch.elements, c, k)
 
-Base.iterate(ch::KhChain{R}, state...) where {R <: RingElement} = begin
+Base.iterate(ch::KhChain, state...) = begin
     y = iterate(ch.elements, state...)
     y === nothing && return nothing
     return (y[1], y[2])
 end
 
-Base.show(io::IO, ch::KhChain{R}) where {R <: RingElement} = 
+Base.show(io::IO, ch::KhChain) = 
     print(io, asString(ch))
 
 Base.:(+)(c1::KhChain{R}, c2::KhChain{R}) where {R <: RingElement} = 
     KhChain(mergewith(+, c1.elements, c2.elements))
 
-Base.:(-)(c::KhChain{R}) where {R <: RingElement} = 
+Base.:(-)(c::KhChain) = 
     mapCoeffs(-, c)
 
 Base.:(-)(c1::KhChain{R}, c2::KhChain{R}) where {R <: RingElement} = 
