@@ -35,7 +35,7 @@ function makeSummand(H::KhHomology{R, RR}, rank::Int, torsions::Vector{R}) :: Kh
 end
 
 function compute(H::KhHomology{R, RR}, k::Int) :: KhHomologySummand{R, RR} where {R, RR}
-    compute_simple(H, k)
+    compute_single(H, k)
 end
 
 function asString(H::KhHomology) :: String
