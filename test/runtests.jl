@@ -1,9 +1,9 @@
 using Test
 
+include("Links/include.jl")
+include("Matrix/include.jl")
+
 @testset verbose = true "Khovanov" begin
-    include("Links/LinkTests.jl")
-    include("Links/JonesTests.jl")
-    include("Matrix/SNFTests.jl")
     include("KhAlgebraTest.jl")
     include("KhChainTests.jl")
     include("KhCubeTests.jl")

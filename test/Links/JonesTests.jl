@@ -1,6 +1,6 @@
 using Test
 
-@testset "Jones.jl" begin
+@testset "Jones" begin
     using Polynomials
     using Khovanov.Links: Link, emptyLink, unknot, trefoil, figure8, hopfLink
     using Khovanov.Links: jonesPolynomial, P
