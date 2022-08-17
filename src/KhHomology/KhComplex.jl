@@ -1,5 +1,6 @@
 using AbstractAlgebra: RingElement, Ring
 using SparseArrays
+using .Links: Link, crossingNum, signedCrossingNums
 using .Utils
 
 const KhComplexMatrix = SparseMatrixCSC

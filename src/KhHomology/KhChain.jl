@@ -1,4 +1,5 @@
 using AbstractAlgebra
+using .Links: State
 
 # KhEnhancedState
 # Generators of Cube(D) and CKh(D)

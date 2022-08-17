@@ -1,5 +1,5 @@
 using Khovanov: KhAlgStructure, KhHomology
-using Khovanov: Link, unknot, trefoil, figure8, mirror
+using Khovanov.Links
 
 types = [
     "Z-Kh", 

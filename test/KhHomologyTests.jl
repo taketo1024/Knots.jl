@@ -2,7 +2,7 @@ using Test
 
 @testset "KhHomology.jl" begin
     using Khovanov: KhAlgStructure, KhHomology
-    using Khovanov: Link, emptyLink, unknot, trefoil, figure8, hopfLink, mirror
+    using Khovanov.Links: Link, emptyLink, unknot, trefoil, figure8, hopfLink, mirror
 
     R = Int
     A = KhAlgStructure(0, 0)

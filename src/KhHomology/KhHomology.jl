@@ -1,5 +1,6 @@
 using AbstractAlgebra: RingElement, Ring
 using SparseArrays
+using .Links: Link
 using .Utils
 
 struct KhHomologySummand{R<:RingElement, RR<:Ring} <: AbstractHomologySummand{R, RR}

@@ -1,7 +1,7 @@
 using Test
 
 @testset "Links.jl" begin
-    using Khovanov: Link, isEmpty, crossingNum, signedCrossingNums, writhe, components, mirror, emptyLink, unknot, trefoil, figure8, hopfLink
+    using Khovanov.Links: Link, isEmpty, crossingNum, signedCrossingNums, writhe, components, mirror, emptyLink, unknot, trefoil, figure8, hopfLink
 
     @testset "emptyLink" begin
         l = emptyLink

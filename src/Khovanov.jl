@@ -2,8 +2,7 @@ module Khovanov
 
 include("Utils/Utils.jl")
 include("Matrix/SNF.jl")
-include("Links/Links.jl")
-include("Links/Jones.jl")
+include("Links/include.jl")
 include("Homology/AbstractComplex.jl")
 include("Homology/AbstractHomologySummand.jl")
 include("Homology/AbstractHomology.jl")

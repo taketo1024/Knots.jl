@@ -3,7 +3,7 @@ using Test
 @testset "KhComplex.jl" begin
     using Khovanov: KhComplex, hDegRange, generators, differential, _generators
     using Khovanov: KhCube, KhAlgStructure
-    using Khovanov: Link, emptyLink, unknot, trefoil, hopfLink, mirror
+    using Khovanov.Links: Link, emptyLink, unknot, trefoil, hopfLink, mirror
 
     R = Int
     A = KhAlgStructure(0, 0)

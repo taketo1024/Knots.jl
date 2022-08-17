@@ -1,8 +1,8 @@
 using Test
 
 @testset verbose = true "Khovanov" begin
-    include("LinkTests.jl")
-    include("JonesTests.jl")
+    include("Links/LinkTests.jl")
+    include("Links/JonesTests.jl")
     include("KhAlgebraTest.jl")
     include("KhChainTests.jl")
     include("KhCubeTests.jl")
