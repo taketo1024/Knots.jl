@@ -2,30 +2,15 @@ using AbstractAlgebra
 using SparseArrays
 using .Utils
 
-struct KhHomologySummand{R <: RingElement, RR <: AbstractAlgebra.Ring}
+struct KhHomologySummand{R<:RingElement, RR<:AbstractAlgebra.Ring} <: AbstractHomologySummand{R, RR}
     baseRing::RR
     rank::Int
     torsions::Vector{R}
 end
 
-function asString(s::KhHomologySummand) :: String
-    iszero(s) && return "⋅"
-    symbol = Utils.symbol(s.baseRing)
-    res = (s.rank > 0) ? ["$symbol$( s.rank > 1 ? Utils.superscript(s.rank) : "" )"] : []
-    for t in s.torsions
-        push!(res, "$symbol/$t")
-    end
-    join(res, " ⊕ ")
-end
-
-Base.zero(::Type{KhHomologySummand{R}}) where {R <: RingElement} = 
-    KhHomologySummand(ZZ, 0, R[])
-
-Base.iszero(s::KhHomologySummand) = 
-    (s.rank == 0 && isempty(s.torsions))
-
-Base.show(io::IO, s::KhHomologySummand) = 
-    print(io, asString(s))
+baseRing(s::KhHomologySummand) = s.baseRing
+rank(s::KhHomologySummand) = s.rank
+torsions(s::KhHomologySummand) = s.torsions
 
 # KhHomology
 
@@ -68,7 +53,7 @@ function compute(H::KhHomology{R}, k::Int) :: KhHomologySummand{R} where {R <: R
     baseRing = H.complex.cube.structure.baseRing
 
     nₖ = length(generators(H.complex, k))
-    nₖ == 0 && return zero(KhHomologySummand{R})
+    nₖ == 0 && return KhHomologySummand(baseRing, 0, R[])
 
     Fₖ₋₁ = _snf(H, k - 1)
     Fₖ   = _snf(H, k)

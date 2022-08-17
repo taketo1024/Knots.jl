@@ -1,4 +1,5 @@
 using AbstractAlgebra: RingElement, Ring
+
 abstract type AbstractComplex{R<:RingElement, RR<:Ring} end
 
 function baseRing(C::AbstractComplex{R, RR}) :: RR where {R, RR <: Ring}
