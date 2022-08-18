@@ -3,7 +3,8 @@ using Test
 @testset "Pivot" begin
     using SparseArrays
     using OrderedCollections
-    # using Knots.Matrix: Pivot, findPivots, findFLPivots
+    using Knots.Matrix: findPivots, pivotPermutations
+    using Knots.Matrix: Pivot, findFLPivots!, findFLColumnPivots!, permutation, occupiedCols 
 
     @testset "initialize" begin
         A = sparse([

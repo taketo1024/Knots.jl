@@ -10,18 +10,15 @@ using AbstractAlgebra: RingElement, is_unit
 using SparseArrays
 using OrderedCollections
 
-export pivots, pivotPermutations
+export findPivots, pivotPermutations
 
-function pivots(A::AbstractSparseMatrix{R}) :: Vector{CartesianIndex{2}} where {R<:RingElement} 
-    (I, J) = findPivots(A::AbstractSparseMatrix{R})
-    map(zip(I, J)) do i, j
-        CartesianIndex(i, j)
-    end
+function findPivots(A::AbstractSparseMatrix{R}) :: Tuple{Vector{Int}, Vector{Int}} where {R<:RingElement} 
+    _findPivots(A::AbstractSparseMatrix{R})
 end
 
 function pivotPermutations(A::AbstractSparseMatrix{R}) :: Tuple{Vector{Int}, Vector{Int}, Int} where {R<:RingElement} 
     (m, n) = size(A)
-    (I, J) = findPivots(A::AbstractSparseMatrix{R})
+    (I, J) = _findPivots(A::AbstractSparseMatrix{R})
     (permutation(I, m), permutation(J, n), length(I))
 end
 
@@ -78,7 +75,7 @@ function occupiedCols(piv::Pivot) :: Set{Int}
     end
 end
 
-function findPivots(A::AbstractSparseMatrix) :: Tuple{Vector{Int}, Vector{Int}}
+function _findPivots(A::AbstractSparseMatrix) :: Tuple{Vector{Int}, Vector{Int}}
     @debug "find pivots: A = size$(size(A))"
 
     piv = Pivot(A)
