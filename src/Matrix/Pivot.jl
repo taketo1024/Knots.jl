@@ -170,39 +170,40 @@ end
 
 function findCycleFreePivot(piv::Pivot, i::Int) :: Union{Int, Nothing}
     #          j1          j2
-    #     i [  o           #    #   ]   *: pivot,
-    #          |           ^            #: candidates,
-    #          V           | rmv        o: queued
-    #    i2 [  *     o     .        ]
+    #     i [  o   #   #   #      # ]    *: pivot,
+    #          |           ^             #: candidate,
+    #          V           | rmv         o: queued,
+    #    i2 [  * --> o --> .        ]    .: entry
     #                |            
     #                V            
-    #       [        *              ]
-    #                             
+    #       [        * ------> o    ]
+    #                          |  
     candidates = Set{Int}()
-    queue = OrderedSet{Int}()
+    queue = Int[]
+    added = Set{Int}()
 
     for j in piv.entries[i]
         if j ∈ keys(piv.pivots)
             push!(queue, j)
+            push!(added, j)
         elseif isCandidate(piv, i, j)
             push!(candidates, j)
         end
     end
 
-    idx = 1
-    while idx <= length(queue) && !isempty(candidates)
-        j1 = queue[idx]
+    while !isempty(queue) && !isempty(candidates)
+        j1 = popfirst!(queue)
         i2 = piv.pivots[j1]
 
         for j2 in piv.entries[i2]
-            if j2 ∈ keys(piv.pivots)
-                push!(queue, j2) # will be ignored if already queued.
+            if j2 ∈ keys(piv.pivots) && j2 ∉ added
+                push!(queue, j2)
+                push!(added, j2)
             elseif j2 ∈ candidates
                 delete!(candidates, j2)
                 isempty(candidates) && break
             end
         end
-        idx += 1
     end
 
     if isempty(candidates)
@@ -213,44 +214,40 @@ function findCycleFreePivot(piv::Pivot, i::Int) :: Union{Int, Nothing}
 end
 
 function sortPivots!(piv::Pivot)
+    (tree, cols) = makeTree(piv)
+    sorted = topsort(tree)
+    piv.pivots = OrderedDict( 
+        cols[idx] => piv.pivots[ cols[idx] ] 
+        for idx in sorted 
+    )
+end
+
+function makeTree(piv::Pivot) :: Tuple{ Vector{Set{Int}}, Vector{Int} }
     npiv = length(piv.pivots)
-    tree = makeTree(piv)
-
-    # must reindex cols within 1:npiv to apply topsort.
-
     cols = sort!(
-        collect(keys(piv.pivots)), 
+        collect( keys(piv.pivots) ), 
         by=( j -> piv.rowWeight[ piv.pivots[j] ] )
     )
     reindex = Dict( cols[idx] => idx for idx in 1:npiv)
     tree = map(1:npiv) do idx 
         j = cols[idx]
-        map( k -> reindex[k], tree[j])
-    end
-    sorted = topsort(tree)
+        i = piv.pivots[j]
 
-    piv.pivots = OrderedDict( cols[idx] => piv.pivots[ cols[idx] ] for idx in sorted)
-end
-
-function makeTree(piv::Pivot) :: Dict{Int, Vector{Int}}
-    Dict( j => targets(piv, j) for j in keys(piv.pivots))
-end
-
-function targets(piv::Pivot, j::Int) :: Vector{Int}
-    targets = Set{Int}() 
-    
-    i = piv.pivots[j]
-    for k in piv.entries[i]
-        if k ≠ j && k ∈ keys(piv.pivots)
-            push!(targets, k)
+        targets = Set{Int}() 
+        for k in piv.entries[i]
+            if k ≠ j && k ∈ keys(piv.pivots)
+                push!(targets, reindex[k])
+            end
         end
-    end
 
-    sort!(collect(targets))
+        targets
+    end
+    
+    (tree, cols)
 end
 
 # TODO: move to Utils
-function topsort(data::Vector{Vector{Int}}) :: Vector{Int}
+function topsort(data::Vector{Set{Int}}) :: Vector{Int}
     n = length(data)
     n == 0 && return Int[]
 

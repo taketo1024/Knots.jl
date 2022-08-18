@@ -41,8 +41,7 @@ function _snf(A::SparseMatrixCSC{R}, baseRing::RR; flags=(false, false, false, f
 end
 
 function _snf_preprocess(A::SparseMatrixCSC{R}, baseRing::RR; flags=(false, false, false, false)) where {R<:RingElement, RR<:Ring}
-    (p, q, r) = pivotPermutations(A)
-    println(size(A), " : ", r)
+    (p, q) = pivotPermutations(A)
 
     B = permute(A, p.data, q.data)     # B = p⁻¹ A q
     F = _snf(B, baseRing, flags=flags) # S = PBQ = (Pp⁻¹) A (qQ)
