@@ -3,6 +3,7 @@ using Test
 @testset "Pivot" begin
     using SparseArrays
     using OrderedCollections
+    using Permutations: Permutation
     using Knots.Matrix: findPivots, pivotPermutations
     using Knots.Matrix: Pivot, findFLPivots!, findFLColumnPivots!, permutation, occupiedCols 
 
@@ -71,7 +72,7 @@ using Test
         A = sparse([ rand() < density ? 1 : 0 for i in 1:m, j in 1:n])
 
         (p, q, r) = pivotPermutations(A)
-        B = permute(A, p, q)
+        B = permute(A, p.data, q.data)
 
         @test r > 0
 
@@ -87,7 +88,7 @@ using Test
 
     @testset "permutation" begin
         p = permutation([7, 3, 4, 1, 5], 10)
-        @test p == [7, 3, 4, 1, 5, 2, 6, 8, 9, 10]
+        @test p == Permutation([7, 3, 4, 1, 5, 2, 6, 8, 9, 10])
     end
 end
 

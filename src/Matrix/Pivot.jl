@@ -9,6 +9,7 @@
 using AbstractAlgebra: RingElement, is_unit
 using SparseArrays
 using OrderedCollections
+using Permutations: Permutation
 
 export findPivots, pivotPermutations
 
@@ -16,7 +17,7 @@ function findPivots(A::AbstractSparseMatrix{R}) :: Tuple{Vector{Int}, Vector{Int
     _findPivots(A::AbstractSparseMatrix{R})
 end
 
-function pivotPermutations(A::AbstractSparseMatrix{R}) :: Tuple{Vector{Int}, Vector{Int}, Int} where {R<:RingElement} 
+function pivotPermutations(A::AbstractSparseMatrix{R}) :: Tuple{Permutation, Permutation, Int} where {R<:RingElement} 
     (m, n) = size(A)
     (I, J) = _findPivots(A::AbstractSparseMatrix{R})
     (permutation(I, m), permutation(J, n), length(I))
@@ -217,7 +218,7 @@ function topsort(data::Vector{Vector{Int}}) :: Vector{Int}
 end
 
 # TODO: move to Utils
-function permutation(indices::Vector{Int}, length::Int) :: Vector{Int}
+function permutation(indices::Vector{Int}, length::Int) :: Permutation
     result = Int[]
     remain = OrderedSet(1:length)
     for i in indices
@@ -227,5 +228,5 @@ function permutation(indices::Vector{Int}, length::Int) :: Vector{Int}
     for i in remain
         push!(result, i)
     end
-    result
+    Permutation(result)
 end
