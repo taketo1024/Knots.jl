@@ -5,7 +5,16 @@ using Test
     using OrderedCollections
     using Permutations: Permutation
     using Knots.Matrix: findPivots, pivotPermutations
-    using Knots.Matrix: Pivot, findFLPivots!, findFLColumnPivots!, permutation, occupiedCols 
+    using Knots.Matrix: Pivot, findFLPivots!, findFLColumnPivots!, findCycleFreePivots!, sortPivots!, makePermutations, permutation, occupiedCols 
+
+    function ok(B, r) 
+        for i in 1 : r
+            for j in 1 : i - 1
+                !iszero(B[i, j]) && return false
+            end
+        end
+        true
+    end
 
     @testset "initialize" begin
         A = sparse([
@@ -66,6 +75,27 @@ using Test
         @test occupiedCols(piv) == Set([1, 2, 3, 4, 5, 6, 8, 9])
     end
 
+    @testset "findCycleFreePivots" begin
+        A = sparse([
+            1 0 0 0 0 1 0 0 1; #
+            0 1 1 1 0 1 0 1 0; 
+            0 0 1 1 0 0 0 1 1; #
+            0 1 0 0 1 0 0 0 0; #
+            0 0 1 0 0 0 0 0 0; #
+            0 1 0 0 0 1 0 1 0  #
+        ])
+        piv = Pivot(A)
+
+        findCycleFreePivots!(piv)
+        sortPivots!(piv)
+        (p, q, r) = makePermutations(piv)
+
+        B = permute(A, p.data, q.data)
+
+        @test r == 5
+        @test ok(B, r)
+    end
+
     @testset "test-random" begin
         density = 0.1
         (m, n) = (30, 50)
@@ -75,15 +105,7 @@ using Test
         B = permute(A, p.data, q.data)
 
         @test r > 0
-
-        ok = true
-        for i in 1 : r
-            for j in 1 : i - 1
-                iszero(B[i, j]) || (ok = false)
-            end
-        end
-
-        @test ok
+        @test ok(B, r)
     end
 
     @testset "permutation" begin

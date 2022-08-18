@@ -13,18 +13,6 @@ using Permutations: Permutation
 
 export findPivots, pivotPermutations
 
-function findPivots(A::AbstractSparseMatrix{R}) :: Tuple{Vector{Int}, Vector{Int}} where {R<:RingElement} 
-    _findPivots(A::AbstractSparseMatrix{R})
-end
-
-function pivotPermutations(A::AbstractSparseMatrix{R}) :: Tuple{Permutation, Permutation, Int} where {R<:RingElement} 
-    (m, n) = size(A)
-    (I, J) = _findPivots(A::AbstractSparseMatrix{R})
-    (permutation(I, m), permutation(J, n), length(I))
-end
-
-# private
-
 mutable struct Pivot{R<:RingElement}
     size::Tuple{Int, Int}
     entries::Vector{Vector{Int}}   # row -> [col]
@@ -32,7 +20,7 @@ mutable struct Pivot{R<:RingElement}
     rowWeight::Vector{Int}         # row -> weight
     colWeight::Vector{Int}         # col -> weight
     candidates::Vector{Set{Int}}   # row -> Set(cols)
-    pivots::OrderedDict{Int, Int} # col -> row
+    pivots::OrderedDict{Int, Int}  # col -> row
 end
 
 Pivot(A::AbstractSparseMatrix{R}) where {R} = begin
@@ -61,6 +49,22 @@ Pivot(A::AbstractSparseMatrix{R}) where {R} = begin
     Pivot{R}((m, n), entries, rowHead, rowWeight, colWeight, candidates, pivots)
 end
 
+function findPivots(A::AbstractSparseMatrix{R}) :: Vector{CartesianIndex{2}} where {R<:RingElement} 
+    piv = Pivot(A)
+    findPivots!(piv)
+    map(collect(piv.pivots)) do (j, i)
+        CartesianIndex(i, j)
+    end
+end
+
+function pivotPermutations(A::AbstractSparseMatrix{R}) :: Tuple{Permutation, Permutation, Int} where {R<:RingElement} 
+    piv = Pivot(A)
+    findPivots!(piv)
+    makePermutations(piv)
+end
+
+# private
+
 function isCandidate(piv::Pivot, i::Int, j::Int) :: Bool 
     j ∈ piv.candidates[i]
 end
@@ -70,21 +74,29 @@ function setPivot!(piv::Pivot, i::Int, j::Int)
     piv.pivots[j] = i
 end
 
+function remainingRows(piv::Pivot) :: Vector{Int}
+    m = piv.size[1]
+    remain = Set(1:m)
+    for (_, i) in piv.pivots
+        delete!(remain, i)
+    end
+    sort!(collect(remain), by=(i -> piv.rowWeight[i]))
+end
+
 function occupiedCols(piv::Pivot) :: Set{Int}
     reduce(piv.pivots; init=Set()) do res, (_, i)
         union!(res, piv.entries[i])
     end
 end
 
-function _findPivots(A::AbstractSparseMatrix) :: Tuple{Vector{Int}, Vector{Int}}
-    @debug "find pivots: A = size$(size(A))"
+function findPivots!(piv::Pivot)
+    @debug "find pivots: A = size$(size(piv))"
 
-    piv = Pivot(A)
     findFLPivots!(piv)
     findFLColumnPivots!(piv)
     findCycleFreePivots!(piv)
 
-    sortPivots(piv)
+    sortPivots!(piv)
 end
 
 # Faugère-Lachartre pivot search
@@ -110,18 +122,12 @@ end
 
 function findFLColumnPivots!(piv::Pivot)
     before = length(piv.pivots)
+    (before == piv.size[1]) && return
 
-    m = piv.size[1]
+    remain = remainingRows(piv)
     occupied = occupiedCols(piv) 
-    rows = let 
-        remain = Set(1:m)
-        for (_, i) in piv.pivots
-            delete!(remain, i)
-        end
-        sort!(collect(remain), by=(i -> piv.rowWeight[i]))
-    end
 
-    for i in rows
+    for i in remain
         isempty(piv.entries[i]) && continue # skip empty rows
         
         candidates = Int[]
@@ -144,43 +150,103 @@ function findFLColumnPivots!(piv::Pivot)
     @debug "FL-col-pivots: $(length(piv.pivots) - before)"
 end
 
-function findCycleFreePivots!(piv::Pivot)
+function findCycleFreePivots!(piv::Pivot) :: Union{Int, Nothing}
+    before = length(piv.pivots)
+    (before == piv.size[1]) && return
+
+    remain = remainingRows(piv)
+
+    while !isempty(remain)
+        i = popfirst!(remain)
+        j = findCycleFreePivot(piv, i)
+
+        isnothing(j) && continue
+        
+        setPivot!(piv, i, j)
+    end
+
+    @debug "cycle-free-pivots: $(length(piv.pivots) - before)"
 end
 
-function sortPivots(piv::Pivot) :: Tuple{Vector{Int}, Vector{Int}}
+function findCycleFreePivot(piv::Pivot, i::Int) :: Union{Int, Nothing}
+    #          j1          j2
+    #     i [  o           #    #   ]   *: pivot,
+    #          |           ^            #: candidates,
+    #          V           | rmv        o: queued
+    #    i2 [  *     o     .        ]
+    #                |            
+    #                V            
+    #       [        *              ]
+    #                             
+    candidates = Set{Int}()
+    queue = OrderedSet{Int}()
+
+    for j in piv.entries[i]
+        if j ∈ keys(piv.pivots)
+            push!(queue, j)
+        elseif isCandidate(piv, i, j)
+            push!(candidates, j)
+        end
+    end
+
+    idx = 1
+    while idx <= length(queue) && !isempty(candidates)
+        j1 = queue[idx]
+        i2 = piv.pivots[j1]
+
+        for j2 in piv.entries[i2]
+            if j2 ∈ keys(piv.pivots)
+                push!(queue, j2) # will be ignored if already queued.
+            elseif j2 ∈ candidates
+                delete!(candidates, j2)
+                isempty(candidates) && break
+            end
+        end
+        idx += 1
+    end
+
+    if isempty(candidates)
+        nothing
+    else
+        argmin(j -> piv.colWeight[j], candidates)
+    end
+end
+
+function sortPivots!(piv::Pivot)
     npiv = length(piv.pivots)
+    tree = makeTree(piv)
+
+    # must reindex cols within 1:npiv to apply topsort.
+
     cols = sort!(
         collect(keys(piv.pivots)), 
         by=( j -> piv.rowWeight[ piv.pivots[j] ] )
     )
-    dict = Dict( cols[j] => j for j in 1:npiv) # reverse
+    reindex = Dict( cols[idx] => idx for idx in 1:npiv)
+    tree = map(1:npiv) do idx 
+        j = cols[idx]
+        map( k -> reindex[k], tree[j])
+    end
+    sorted = topsort(tree)
 
-    data = map(1 : npiv) do c
-        targets = Set{Int}() 
-        j = cols[c]
-        i = piv.pivots[j]
-        entries = piv.entries[i]
-        for k in entries 
-            if k ≠ j && k ∈ keys(piv.pivots)
-                push!(targets, dict[k])
-            end
+    piv.pivots = OrderedDict( cols[idx] => piv.pivots[ cols[idx] ] for idx in sorted)
+end
+
+function makeTree(piv::Pivot) :: Dict{Int, Vector{Int}}
+    Dict( j => targets(piv, j) for j in keys(piv.pivots))
+end
+
+function targets(piv::Pivot, j::Int) :: Vector{Int}
+    targets = Set{Int}() 
+    
+    i = piv.pivots[j]
+    for k in piv.entries[i]
+        if k ≠ j && k ∈ keys(piv.pivots)
+            push!(targets, k)
         end
-        sort!(collect(targets))
     end
 
-    sorted = topsort(data)
-
-    Is = Int[]
-    Js = Int[]
-
-    map(sorted) do k 
-        j = cols[k]
-        i = piv.pivots[j]
-        push!(Is, i)
-        push!(Js, j)
-    end
-
-    (Is, Js)
+    sort!(collect(targets))
 end
 
 # TODO: move to Utils
@@ -215,6 +281,13 @@ function topsort(data::Vector{Vector{Int}}) :: Vector{Int}
     @assert length(result) == n
 
     result
+end
+
+function makePermutations(piv::Pivot) :: Tuple{Permutation, Permutation, Int} 
+    (m, n) = piv.size
+    I = collect(values(piv.pivots))
+    J = collect(keys(piv.pivots))
+    (permutation(I, m), permutation(J, n), length(I))
 end
 
 # TODO: move to Utils
