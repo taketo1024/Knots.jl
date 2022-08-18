@@ -2,7 +2,8 @@ using Test
 
 @testset "SNF" begin
     using AbstractAlgebra
-    using Knots.Matrix
+    using SparseArrays: sparse
+    using Knots.Matrix: SNF, snf
     using Knots.Matrix: kb_canonical_row_x!, kb_reduce_column_x!, hnf_x, snf_kb_x_step1!, snf_kb_x_step2!, snf_x
     
     Z = zz
@@ -255,6 +256,39 @@ using Test
         @test !isnothing(Q)
         @test isnothing(Qinv)
     end
+
+    @testset "snf-no-preprocess" begin 
+        A = sparse([
+            1 0 1 0 0 1 1 0 1;
+            0 1 3 1 0 1 0 2 0;
+            0 0 1 1 0 0 0 5 1;
+            0 1 1 0 3 0 0 0 0;
+            0 1 0 1 0 0 1 0 1;
+            1 0 2 0 1 1 0 1 1
+        ])
+
+        F = snf(A, zz; preprocess=false, flags=(true, true, true, true))
+
+        @test is_one(F.P * F.P⁻¹)
+        @test is_one(F.Q * F.Q⁻¹)
+    end
+
+    @testset "snf-preprocess" begin 
+        A = sparse([
+            1 0 1 0 0 1 1 0 1;
+            0 1 3 1 0 1 0 2 0;
+            0 0 1 1 0 0 0 5 1;
+            0 1 1 0 3 0 0 0 0;
+            0 1 0 1 0 0 1 0 1;
+            1 0 2 0 1 1 0 1 1
+        ])
+
+        F = snf(A, zz; preprocess=true, flags=(true, true, true, true))
+
+        @test is_one(F.P * F.P⁻¹)
+        @test is_one(F.Q * F.Q⁻¹)
+    end
+
 end
 
 nothing
