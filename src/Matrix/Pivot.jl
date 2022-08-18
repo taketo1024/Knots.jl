@@ -6,9 +6,26 @@
 # see also: SpaSM (Sparse direct Solver Modulo p)
 # https://github.com/cbouilla/spasm
 
-
 using AbstractAlgebra: RingElement, is_unit
 using SparseArrays
+using OrderedCollections
+
+export pivots, pivotPermutations
+
+function pivots(A::AbstractSparseMatrix{R}) :: Vector{CartesianIndex{2}} where {R<:RingElement} 
+    (I, J) = findPivots(A::AbstractSparseMatrix{R})
+    map(zip(I, J)) do i, j
+        CartesianIndex(i, j)
+    end
+end
+
+function pivotPermutations(A::AbstractSparseMatrix{R}) :: Tuple{Vector{Int}, Vector{Int}, Int} where {R<:RingElement} 
+    (m, n) = size(A)
+    (I, J) = findPivots(A::AbstractSparseMatrix{R})
+    (permutation(I, m), permutation(J, n), length(I))
+end
+
+# private
 
 mutable struct Pivot{R<:RingElement}
     size::Tuple{Int, Int}
@@ -17,8 +34,7 @@ mutable struct Pivot{R<:RingElement}
     rowWeight::Vector{Int}         # row -> weight
     colWeight::Vector{Int}         # col -> weight
     candidates::Vector{Set{Int}}   # row -> Set(cols)
-    pivotRows::Set{Int}            # Set(rows)
-    pivotPos::Vector{Int}          # col -> row
+    pivots::OrderedDict{Int, Int} # col -> row
 end
 
 Pivot(A::AbstractSparseMatrix{R}) where {R} = begin
@@ -28,8 +44,7 @@ Pivot(A::AbstractSparseMatrix{R}) where {R} = begin
     rowWeight = fill(0, m)
     colWeight = fill(0, n)
     candidates = map( _ -> Set{Int}(), 1:m)
-    pivotRows = Set{Int}()
-    pivotPos = fill(0, n)
+    pivots = OrderedDict{Int, Int}()
 
     for (i, j, a) in zip(findnz(A)...)
         iszero(a) && continue
@@ -45,28 +60,43 @@ Pivot(A::AbstractSparseMatrix{R}) where {R} = begin
         end
     end
 
-    Pivot{R}((m, n), entries, rowHead, rowWeight, colWeight, candidates, pivotRows, pivotPos)
+    Pivot{R}((m, n), entries, rowHead, rowWeight, colWeight, candidates, pivots)
 end
 
-function findPivots!(A::AbstractSparseMatrix{R}) where {R<:RingElement} 
-    @debug "find pivot: A = size$(size(A))"
-    findFLPivots!(A)
-    # findFLColumnpivotPos!(A)
-    # findCycleFreepivotPos!(A)
+function isCandidate(piv::Pivot, i::Int, j::Int) :: Bool 
+    j ∈ piv.candidates[i]
 end
 
-function result(piv::Pivot) :: Vector{CartesianIndex{2}}
-    []
+function setPivot!(piv::Pivot, i::Int, j::Int)
+    @debug "\tpivot: ($i, $j)"
+    piv.pivots[j] = i
+end
+
+function occupiedCols(piv::Pivot) :: Set{Int}
+    reduce(piv.pivots; init=Set()) do res, (_, i)
+        union!(res, piv.entries[i])
+    end
+end
+
+function findPivots(A::AbstractSparseMatrix) :: Tuple{Vector{Int}, Vector{Int}}
+    @debug "find pivots: A = size$(size(A))"
+
+    piv = Pivot(A)
+    findFLPivots!(piv)
+    findFLColumnPivots!(piv)
+    findCycleFreePivots!(piv)
+
+    sortPivots(piv)
 end
 
 # Faugère-Lachartre pivot search
 function findFLPivots!(piv::Pivot)
     m = piv.size[1]
-    pivots = Dict()
+    pivots = OrderedDict()
 
     for i in 1:m
         j = piv.rowHead[i]
-        j ∉ piv.candidates[i] && continue
+        !isCandidate(piv, i, j) && continue
 
         if !haskey(pivots, j) || piv.rowWeight[i] < piv.rowWeight[pivots[j]]
             pivots[j] = i
@@ -77,19 +107,21 @@ function findFLPivots!(piv::Pivot)
         setPivot!(piv, i, j)
     end
 
-    @debug "FL-pivots: $(length(piv.pivotRows))"
+    @debug "FL-pivots: $(length(piv.pivots))"
 end
 
 function findFLColumnPivots!(piv::Pivot)
-    before = length(piv.pivotRows)
+    before = length(piv.pivots)
 
     m = piv.size[1]
-    occupied = reduce(piv.pivotRows; init=Set()) do res, i
-        union!(res, piv.entries[i])
+    occupied = occupiedCols(piv) 
+    rows = let 
+        remain = Set(1:m)
+        for (_, i) in piv.pivots
+            delete!(remain, i)
+        end
+        sort!(collect(remain), by=(i -> piv.rowWeight[i]))
     end
-
-    rows = collect( setdiff(Set(1:m), piv.pivotRows) )
-    sort!(rows, by=(i -> piv.rowWeight[i]))
 
     for i in rows
         isempty(piv.entries[i]) && continue # skip empty rows
@@ -97,27 +129,106 @@ function findFLColumnPivots!(piv::Pivot)
         candidates = Int[]
 
         for j in piv.entries[i]
-            if j ∉ occupied && j ∈ piv.candidates[i] 
+            if j ∉ occupied && isCandidate(piv, i, j)
                 push!(candidates, j)
             end
         end
 
         isempty(candidates) && continue
 
-        sort!(candidates, by=(j -> colWeight[j]))
+        sort!(candidates, by=(j -> piv.colWeight[j]))
         j = first(candidates)
 
         setPivot!(piv, i, j)
         union!(occupied, piv.entries[i])
     end
 
-    @debug "FL-col-pivots: $(length(piv.pivotRows) - before)"
+    @debug "FL-col-pivots: $(length(piv.pivots) - before)"
 end
 
 function findCycleFreePivots!(piv::Pivot)
 end
 
-function setPivot!(piv::Pivot, i::Int, j::Int)
-    push!(piv.pivotRows, i)
-    piv.pivotPos[j] = i
+function sortPivots(piv::Pivot) :: Tuple{Vector{Int}, Vector{Int}}
+    npiv = length(piv.pivots)
+    cols = sort!(
+        collect(keys(piv.pivots)), 
+        by=( j -> piv.rowWeight[ piv.pivots[j] ] )
+    )
+    dict = Dict( cols[j] => j for j in 1:npiv) # reverse
+
+    data = map(1 : npiv) do c
+        targets = Set{Int}() 
+        j = cols[c]
+        i = piv.pivots[j]
+        entries = piv.entries[i]
+        for k in entries 
+            if k ≠ j && k ∈ keys(piv.pivots)
+                push!(targets, dict[k])
+            end
+        end
+        sort!(collect(targets))
+    end
+
+    sorted = topsort(data)
+
+    Is = Int[]
+    Js = Int[]
+
+    map(sorted) do k 
+        j = cols[k]
+        i = piv.pivots[j]
+        push!(Is, i)
+        push!(Js, j)
+    end
+
+    (Is, Js)
+end
+
+# TODO: move to Utils
+function topsort(data::Vector{Vector{Int}}) :: Vector{Int}
+    n = length(data)
+    n == 0 && return Int[]
+
+    weight = fill(0, n)
+    for targets in data
+        for i in targets
+            weight[i] += 1
+        end
+    end
+
+    result = Int[]
+    queue = filter( i -> weight[i] == 0, 1:n )
+    isempty(queue) && error("detect loop")
+
+    while !isempty(queue)
+        i = popfirst!(queue)
+        push!(result, i)
+
+        for j in data[i]
+            weight[j] -= 1
+            if weight[j] == 0
+                push!(queue, j)
+            end
+        end
+    end
+
+    @assert all( map( w -> w == 0, weight) )
+    @assert length(result) == n
+
+    result
+end
+
+# TODO: move to Utils
+function permutation(indices::Vector{Int}, length::Int) :: Vector{Int}
+    result = Int[]
+    remain = OrderedSet(1:length)
+    for i in indices
+        push!(result, i)
+        delete!(remain, i)
+    end
+    for i in remain
+        push!(result, i)
+    end
+    result
 end
