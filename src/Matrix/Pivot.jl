@@ -25,7 +25,7 @@ mutable struct Pivot{R<:RingElement}
     pivots::OrderedDict{Int, Int}  # col -> row
 end
 
-Pivot(A::AbstractSparseMatrix{R}) where {R} = begin
+Pivot(A::SparseMatrix{R}) where {R<:RingElement} = begin
     (m, n) = size(A)
     entries = map( _ -> Int[], 1:m)
     rowHead   = fill(0, m)
@@ -51,7 +51,7 @@ Pivot(A::AbstractSparseMatrix{R}) where {R} = begin
     Pivot{R}((m, n), entries, rowHead, rowWeight, colWeight, candidates, pivots)
 end
 
-function findPivots(A::AbstractSparseMatrix{R}) :: Vector{CartesianIndex{2}} where {R<:RingElement} 
+function findPivots(A::SparseMatrix{R}) :: Vector{CartesianIndex{2}} where {R<:RingElement} 
     piv = Pivot(A)
     findPivots!(piv)
     map(collect(piv.pivots)) do (j, i)
@@ -59,7 +59,7 @@ function findPivots(A::AbstractSparseMatrix{R}) :: Vector{CartesianIndex{2}} whe
     end
 end
 
-function pivotPermutations(A::AbstractSparseMatrix{R}) :: Tuple{Permutation, Permutation, Int} where {R<:RingElement} 
+function pivotPermutations(A::SparseMatrix{R}) :: Tuple{Permutation, Permutation, Int} where {R<:RingElement} 
     piv = Pivot(A)
     findPivots!(piv)
     makePermutations(piv)
