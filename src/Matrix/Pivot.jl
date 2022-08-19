@@ -10,6 +10,8 @@ using AbstractAlgebra: RingElement, is_unit
 using SparseArrays
 using OrderedCollections
 using Permutations: Permutation
+using Base.Threads
+using ..Utils: ReadWriteLock, read_lock, write_lock
 
 export findPivots, pivotPermutations
 
@@ -116,12 +118,13 @@ function findFLPivots!(piv::Pivot)
         setPivot!(piv, i, j)
     end
 
-    @debug "FL-pivots: $(length(piv.pivots))"
+    npiv = length(piv.pivots)
+    @debug "found FL-pivots: $npiv."
 end
 
 function findFLColumnPivots!(piv::Pivot)
     before = length(piv.pivots)
-    (before == piv.size[1]) && return
+    (before == min(piv.size...)) && return
 
     remain = remainingRows(piv)
     occupied = occupiedCols(piv) 
@@ -146,25 +149,62 @@ function findFLColumnPivots!(piv::Pivot)
         union!(occupied, piv.entries[i])
     end
 
-    @debug "FL-col-pivots: $(length(piv.pivots) - before)"
+    npiv = length(piv.pivots)
+    @debug "found FL-col-pivots: $(npiv - before), total: $npiv."
 end
 
 function findCycleFreePivots!(piv::Pivot) :: Union{Int, Nothing}
     before = length(piv.pivots)
-    (before == piv.size[1]) && return
+    (before == min(piv.size...)) && return
 
     remain = remainingRows(piv)
 
+    @debug "start findCycleFreePivots, remain: $(length(remain))"
+
+    if Threads.nthreads() > 0
+        findCycleFreePivots_p!(piv, remain)
+    else 
+        findCycleFreePivots_s!(piv, remain)
+    end
+
+    npiv = length(piv.pivots)
+    @debug "cycle-free-pivots: $(npiv - before), total: $npiv."
+end
+
+function findCycleFreePivots_s!(piv::Pivot, remain::Vector{Int}) :: Union{Int, Nothing}
     while !isempty(remain)
         i = popfirst!(remain)
         j = findCycleFreePivot(piv, i)
-
         isnothing(j) && continue
-        
         setPivot!(piv, i, j)
     end
+end
 
-    @debug "cycle-free-pivots: $(length(piv.pivots) - before)"
+function findCycleFreePivots_p!(piv::Pivot, remain::Vector{Int}) :: Union{Int, Nothing}
+    lock = ReadWriteLock()
+
+    @threads for i in remain
+        while true 
+            (npiv, j) = read_lock(lock) do 
+                npiv = length(piv.pivots)
+                j = findCycleFreePivot(piv, i)
+                (npiv, j)
+            end
+
+            isnothing(j) && break
+
+            success = write_lock(lock) do 
+                if npiv == length(piv.pivots)
+                    setPivot!(piv, i, j)
+                    true
+                else
+                    false
+                end
+            end
+
+            success && break
+        end
+    end
 end
 
 function findCycleFreePivot(piv::Pivot, i::Int) :: Union{Int, Nothing}

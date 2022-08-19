@@ -75,6 +75,12 @@ using Test
         @test occupiedCols(piv) == Set([1, 2, 3, 4, 5, 6, 8, 9])
     end
 
+
+    function pa(A)
+        Base.print_matrix(stdout, Array(A), "[", " ", "]")
+        println()
+    end
+
     @testset "findCycleFreePivots" begin
         A = sparse([
             1 0 0 0 0 1 0 0 1; #
@@ -92,19 +98,19 @@ using Test
 
         B = permute(A, p.data, q.data)
 
-        @test r == 5
+        @test r >= 5
         @test ok(B, r)
     end
 
     @testset "test-random" begin
         density = 0.1
-        (m, n) = (30, 50)
+        (m, n) = (100, 100)
         A = sparse([ rand() < density ? 1 : 0 for i in 1:m, j in 1:n])
 
         (p, q, r) = pivotPermutations(A)
         B = permute(A, p.data, q.data)
 
-        @test r > 0
+        @test r > 30
         @test ok(B, r)
     end
 
