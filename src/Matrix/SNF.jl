@@ -1,7 +1,5 @@
 using AbstractAlgebra
 using AbstractAlgebra: Ring
-using SparseArrays: permute
-using Permutations: Permutation, inv
 
 export SNF, snf
 
@@ -45,19 +43,14 @@ end
 function _snf_preprocess(A::SparseMatrix{R}, baseRing::RR; flags=(false, false, false, false)) where {R<:RingElement, RR<:Ring}
     (p, q) = pivotPermutations(A)
 
-    B = permute(A, p.data, q.data)     # B = p⁻¹ A q
+    B = permute(A, p, q)     # B = p⁻¹ A q
     F = _snf(B, baseRing, flags=flags) # S = PBQ = (Pp⁻¹) A (qQ)
 
     if any(flags)
-        (m, n) = size(A)
-        (p⁻¹, q⁻¹) = (inv(p).data, inv(q).data)
-        (p, q) = (p.data, q.data)
-        (idₘ, idₙ) = (collect(1:m), collect(1:n))
-            
-        isnothing(F.P)   || (F.P   = permute(F.P, idₘ, p⁻¹))    # Pp⁻¹
-        isnothing(F.P⁻¹) || (F.P⁻¹ = permute(F.P⁻¹, p⁻¹, idₘ))  # pP⁻¹
-        isnothing(F.Q)   || (F.Q   = permute(F.Q, q⁻¹, idₙ))    # qQ
-        isnothing(F.Q⁻¹) || (F.Q⁻¹ = permute(F.Q⁻¹, idₙ, q⁻¹))  # Q⁻¹q⁻¹
+        isnothing(F.P)   || (F.P   = permute_col(F.P, inv(p)))    # Pp⁻¹
+        isnothing(F.P⁻¹) || (F.P⁻¹ = permute_row(F.P⁻¹, inv(p)))  # pP⁻¹
+        isnothing(F.Q)   || (F.Q   = permute_row(F.Q, inv(q)))    # qQ
+        isnothing(F.Q⁻¹) || (F.Q⁻¹ = permute_col(F.Q⁻¹, inv(q)))  # Q⁻¹q⁻¹
     end
 
     return F

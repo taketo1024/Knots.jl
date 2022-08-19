@@ -1,6 +1,7 @@
 using SparseArrays
 using AbstractAlgebra
 using AbstractAlgebra: RingElement, Ring
+using Permutations
 
 const SparseMatrix = SparseArrays.SparseMatrixCSC
 const DenseMatrix = AbstractAlgebra.MatrixElem
@@ -37,6 +38,18 @@ function _toSparse(Aᵈ::DenseMatrix{R}) :: SparseMatrix{R} where {R<:RingElemen
     end
 
     SparseArrays.sparse(Is, Js, Vs, m, n)
+end
+
+function permute(A::SparseMatrix{R}, p::Permutation, q::Permutation) :: SparseMatrix{R} where {R}
+    SparseArrays.permute(A, p.data, q.data)
+end
+
+function permute_row(A::SparseMatrix{R}, p::Permutation) :: SparseMatrix{R} where {R}
+    SparseArrays.permute(A, p.data, collect(1:size(A, 2)))
+end
+
+function permute_col(A::SparseMatrix{R}, q::Permutation) :: SparseMatrix{R} where {R}
+    SparseArrays.permute(A, collect(1:size(A, 1)), q.data)
 end
 
 # MEMO: 
