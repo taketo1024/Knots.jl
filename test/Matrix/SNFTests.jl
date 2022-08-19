@@ -9,11 +9,6 @@ using Test
     Z = zz
     Q = qq
 
-    function pa(A)
-        Base.print_matrix(stdout, Array(A), "[", " ", "]")
-        println()
-    end
-
     # HNF
 
     @testset "kb_canonical_row_x!" begin

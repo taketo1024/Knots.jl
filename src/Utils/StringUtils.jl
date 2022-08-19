@@ -1,14 +1,5 @@
-function bitseq(length::Int, degree::Int) :: Vector{Int} 
-    if length <= 0 || degree < 0 || length < degree 
-        []
-    elseif length > 1
-        s₀ = map( b -> (b << 1) | 1, bitseq(length - 1, degree - 1) )
-        s₁ = map( b -> b << 1, bitseq(length - 1, degree) )
-        append!(s₀, s₁)
-    else # 0 ≤ degree ≤ length == 1
-        [degree] 
-    end
-end
+using SparseArrays: AbstractSparseMatrix
+using AbstractAlgebra
 
 function subscript(i::Int) :: String
     c = i < 0 ? [Char(0x208B)] : []
@@ -30,7 +21,6 @@ function superscript(i::Int) :: String
     join(c)
 end
 
-using AbstractAlgebra
 function symbol(R::RR) :: String where {RR <: AbstractAlgebra.Ring}
     if isa(R, AbstractAlgebra.Integers)
         "Z"
@@ -48,4 +38,12 @@ function symbol(R::RR) :: String where {RR <: AbstractAlgebra.Ring}
     else
         "R"
     end
+end
+
+function print_matrix(A::AbstractMatrix)
+    Base.print_matrix(stdout, A, "[", " ", "]")
+end
+
+function print_matrix(A::AbstractSparseMatrix)
+    print_matrix(Array(A))
 end

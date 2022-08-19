@@ -1,6 +1,7 @@
 module Utils
 
+include("BitSequence.jl")
 include("ReadWriteLock.jl")
-include("Utils.jl")
+include("StringUtils.jl")
 
 end
