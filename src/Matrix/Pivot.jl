@@ -70,7 +70,6 @@ function isCandidate(piv::Pivot, i::Int, j::Int) :: Bool
 end
 
 function setPivot!(piv::Pivot, i::Int, j::Int)
-    @debug "\tpivot: ($i, $j)"
     piv.pivots[j] = i
 end
 
@@ -90,7 +89,7 @@ function occupiedCols(piv::Pivot) :: Set{Int}
 end
 
 function findPivots!(piv::Pivot)
-    @debug "find pivots: A = size$(size(piv))"
+    @debug "find pivots: A = size$(piv.size)"
 
     findFLPivots!(piv)
     findFLColumnPivots!(piv)
@@ -171,9 +170,9 @@ end
 function findCycleFreePivot(piv::Pivot, i::Int) :: Union{Int, Nothing}
     #          j1          j2
     #     i [  o   #   #   #      # ]    *: pivot,
-    #          |           ^             #: candidate,
-    #          V           | rmv         o: queued,
-    #    i2 [  * --> o --> .        ]    .: entry
+    #          |           :             #: candidate,
+    #          V           : rmv         o: queued,
+    #    i2 [  * --> o --> x        ]    x: entry
     #                |            
     #                V            
     #       [        * ------> o    ]
