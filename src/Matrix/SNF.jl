@@ -1,6 +1,6 @@
 using AbstractAlgebra
 using AbstractAlgebra: Ring
-using SparseArrays: SparseMatrix, findnz, permute
+using SparseArrays: permute
 using Permutations: Permutation, inv
 
 export SNF, snf
