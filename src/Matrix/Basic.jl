@@ -2,6 +2,7 @@ using SparseArrays
 using AbstractAlgebra
 using AbstractAlgebra: RingElement, Ring
 using Permutations
+using ..Env
 
 export SparseMatrix, DenseMatrix
 export print_matrix
@@ -9,23 +10,17 @@ export print_matrix
 const SparseMatrix = SparseArrays.SparseMatrixCSC
 const DenseMatrix = AbstractAlgebra.MatrixElem
 
-function _toDense(A::SparseMatrix{R}, baseRing::RR) :: DenseMatrix{R} where {R<:RingElement, RR<:Ring}
+function _toDense(A::SparseMatrix{R}) :: DenseMatrix{R} where {R<:RingElement, RR<:Ring}
+    baseRing = Env.get_base_ring(R)
     (m, n) = size(A)
-
-    if R <: Union{Integer, Rational}
-        Aᵈ = AbstractAlgebra.matrix(baseRing, A)
-    else
-        Aᵈ = AbstractAlgebra.zero_matrix(baseRing, m, n)
-        for (i, j, a) in zip(SparseArrays.findnz(A)...)
-            Aᵈ[i, j] = a
-        end
+    Aᵈ = AbstractAlgebra.zero_matrix(baseRing, m, n)
+    for (i, j, a) in zip(SparseArrays.findnz(A)...)
+        Aᵈ[i, j] = a
     end
     Aᵈ
 end
 
 function _toSparse(Aᵈ::DenseMatrix{R}) :: SparseMatrix{R} where {R<:RingElement}
-    # WARN: must not call simply `sparse(Aᵈ)`, since `R` might be an AbstractAlgebra-type.
-
     (m, n) = size(Aᵈ)
 
     Is = Int[]
@@ -43,6 +38,26 @@ function _toSparse(Aᵈ::DenseMatrix{R}) :: SparseMatrix{R} where {R<:RingElemen
     end
 
     SparseArrays.sparse(Is, Js, Vs, m, n)
+end
+
+
+function sparse_identity_matrix(R, n::Int) :: SparseMatrix{R}
+    Is = collect(1 : n)
+    Vs = fill(one(R), n)
+    SparseArrays.sparse(Is, Is, Vs, n, n)
+end
+
+function is_identity(A::SparseMatrix) :: Bool
+    for (i, j, a) in zip(SparseArrays.findnz(A)...)
+        if i == j && isone(a)
+            continue
+        elseif i != j && iszero(a)
+            continue
+        else
+            return false
+        end
+    end
+    true
 end
 
 function permute(A::SparseMatrix{R}, p::Permutation, q::Permutation) :: SparseMatrix{R} where {R}

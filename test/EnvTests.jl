@@ -1,6 +1,6 @@
 using Test
 
-@testset verbose=true begin
+@testset "Env" begin
     using Knots.Env: set_base_ring, current_base_ring, check_base_ring, get_base_ring
     using AbstractAlgebra
 

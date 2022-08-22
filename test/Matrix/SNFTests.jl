@@ -262,7 +262,7 @@ using Test
             1 0 2 0 1 1 0 1 1
         ])
 
-        F = snf(A, zz; preprocess=false, flags=(true, true, true, true))
+        F = snf(A; preprocess=false, flags=(true, true, true, true))
 
         @test is_one(F.P * F.P⁻¹)
         @test is_one(F.Q * F.Q⁻¹)
@@ -278,7 +278,7 @@ using Test
             1 0 2 0 1 1 0 1 1
         ])
 
-        F = snf(A, zz; preprocess=true, flags=(true, true, true, true))
+        F = snf(A; preprocess=true, flags=(true, true, true, true))
 
         @test is_one(F.P * F.P⁻¹)
         @test is_one(F.Q * F.Q⁻¹)

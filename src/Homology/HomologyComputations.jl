@@ -22,7 +22,6 @@ using ..Matrix: SNF, snf
 #       ≅ Rᶠ ⊕ Rᵗ/Im(Sₖ₋₁)
 
 function compute_single(H::AbstractHomology{R, RR}, k::Int) :: AbstractHomologySummand{R, RR} where {R, RR}
-    r = baseRing(H)
     C = complex(H)
     deg = differentialDegree(C)
 
@@ -32,8 +31,8 @@ function compute_single(H::AbstractHomology{R, RR}, k::Int) :: AbstractHomologyS
     Aₖ₋₁ = differential(C, k - deg)
     Aₖ   = differential(C, k)
 
-    Fₖ₋₁ = snf(Aₖ₋₁, r)
-    Fₖ   = snf(Aₖ, r)
+    Fₖ₋₁ = snf(Aₖ₋₁)
+    Fₖ   = snf(Aₖ)
 
     rₖ₋₁ = length(Fₖ₋₁.S)
     rₖ   = length(Fₖ.S)
@@ -45,7 +44,6 @@ function compute_single(H::AbstractHomology{R, RR}, k::Int) :: AbstractHomologyS
 end
 
 function compute_incremental(H::AbstractHomology{R, RR}, k::Int; previous=nothing) :: Tuple{AbstractHomologySummand{R, RR}, Any} where {R, RR}
-    r = baseRing(H)
     C = complex(H)
     deg = differentialDegree(C)
     flags = (false, true, false, false) # only need P⁻¹
@@ -57,7 +55,7 @@ function compute_incremental(H::AbstractHomology{R, RR}, k::Int; previous=nothin
     if nₖ₋₁ > 0
         Aₖ₋₁ = differential(C, k - deg)
         Fₖ₋₁ = isnothing(previous) ? 
-            snf(Aₖ₋₁, r; flags=flags) :
+            snf(Aₖ₋₁; flags=flags) :
             previous
 
         Pₖ₋₁⁻¹ = Fₖ₋₁.P⁻¹
@@ -75,7 +73,7 @@ function compute_incremental(H::AbstractHomology{R, RR}, k::Int; previous=nothin
         Aₖ * view(Pₖ₋₁⁻¹, :, rₖ₋₁ + 1 : nₖ) : # restrict Aₖ to the complement of R^{rₖ₋₁}
         Aₖ
 
-    Fₖ = snf(Bₖ, r; flags=flags)
+    Fₖ = snf(Bₖ; flags=flags)
     Sₖ = Fₖ.S
     rₖ = length(Sₖ)
 
@@ -85,7 +83,6 @@ function compute_incremental(H::AbstractHomology{R, RR}, k::Int; previous=nothin
 end
 
 function compute_reverse_incremental(H::AbstractHomology{R, RR}, k::Int; previous=nothing) :: Tuple{AbstractHomologySummand{R, RR}, Any} where {R, RR}
-    r = baseRing(H)
     C = complex(H)
     deg = differentialDegree(C)
     flags=(false, false, false, true) # only need Q⁻¹
@@ -95,7 +92,7 @@ function compute_reverse_incremental(H::AbstractHomology{R, RR}, k::Int; previou
 
     Fₖ = if isnothing(previous)
         Aₖ = differential(H.complex, k)
-        snf(Aₖ, r; flags=flags) 
+        snf(Aₖ; flags=flags) 
     else 
         previous
     end
@@ -108,7 +105,7 @@ function compute_reverse_incremental(H::AbstractHomology{R, RR}, k::Int; previou
         view(Qₖ⁻¹, rₖ + 1 : nₖ, : ) * Aₖ₋₁ : # compose with projection to Zₖ
         Aₖ₋₁
     
-    Fₖ₋₁ = snf(Bₖ₋₁, r; flags=flags)
+    Fₖ₋₁ = snf(Bₖ₋₁; flags=flags)
     Sₖ₋₁ = Fₖ₋₁.S
     rₖ₋₁ = length(Sₖ₋₁)
 

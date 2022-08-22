@@ -4,7 +4,6 @@ using Test
     using SparseArrays
     using OrderedCollections
     using Permutations: Permutation
-    using LinearAlgebra: I as id, UpperTriangular
     using Knots.Matrix: Pivot, pivot, permutations, findFLPivots!, findFLColumnPivots!, findCycleFreePivots!, sortPivots!, occupiedCols, permutation
 
     function ok(B, r) 
