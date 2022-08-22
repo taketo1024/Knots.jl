@@ -3,6 +3,9 @@ using AbstractAlgebra
 using AbstractAlgebra: RingElement, Ring
 using Permutations
 
+export SparseMatrix, DenseMatrix
+export print_matrix
+
 const SparseMatrix = SparseArrays.SparseMatrixCSC
 const DenseMatrix = AbstractAlgebra.MatrixElem
 
@@ -52,4 +55,8 @@ end
 
 function permute_col(A::SparseMatrix{R}, q::Permutation) :: SparseMatrix{R} where {R}
     SparseArrays.permute(A, collect(1:size(A, 1)), q.data)
+end
+
+function print_matrix(A::AbstractMatrix)
+    Base.print_matrix(stdout, A, "[", " ", "]\n")
 end

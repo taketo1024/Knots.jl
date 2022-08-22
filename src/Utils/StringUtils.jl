@@ -39,11 +39,3 @@ function symbol(R::RR) :: String where {RR <: AbstractAlgebra.Ring}
         "R"
     end
 end
-
-function print_matrix(A::AbstractMatrix)
-    Base.print_matrix(stdout, A, "[", " ", "]")
-end
-
-function print_matrix(A::AbstractSparseMatrix)
-    print_matrix(Array(A))
-end
