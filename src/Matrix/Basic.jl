@@ -60,6 +60,15 @@ function is_identity(A::SparseMatrix) :: Bool
     true
 end
 
+function is_zero(A::SparseMatrix) :: Bool
+    for a in SparseArrays.findnz(A)[3]
+        if !iszero(a)
+            return false
+        end
+    end
+    true
+end
+
 function permute(A::SparseMatrix{R}, p::Permutation, q::Permutation) :: SparseMatrix{R} where {R}
     SparseArrays.permute(A, p.data, q.data)
 end
