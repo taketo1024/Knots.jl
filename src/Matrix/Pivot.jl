@@ -13,7 +13,7 @@ using Permutations: Permutation
 using Base.Threads
 using ..Utils: ReadWriteLock, read_lock, write_lock
 
-export findPivots, pivotPermutations
+export Pivot, pivot, coordinates, permutations
 
 mutable struct Pivot{R<:RingElement}
     size::Tuple{Int, Int}
@@ -51,18 +51,22 @@ Pivot(A::SparseMatrix{R}) where {R<:RingElement} = begin
     Pivot{R}((m, n), entries, rowHead, rowWeight, colWeight, candidates, pivots)
 end
 
-function findPivots(A::SparseMatrix{R}) :: Vector{CartesianIndex{2}} where {R<:RingElement} 
+function pivot(A::SparseMatrix{R}) :: Pivot{R} where {R}
     piv = Pivot(A)
     findPivots!(piv)
+end
+
+function coordinates(piv::Pivot) :: Vector{CartesianIndex{2}}
     map(collect(piv.pivots)) do (j, i)
         CartesianIndex(i, j)
     end
 end
 
-function pivotPermutations(A::SparseMatrix{R}) :: Tuple{Permutation, Permutation, Int} where {R<:RingElement} 
-    piv = Pivot(A)
-    findPivots!(piv)
-    makePermutations(piv)
+function permutations(piv::Pivot) :: Tuple{Permutation, Permutation, Int}
+    (m, n) = piv.size
+    I = collect(values(piv.pivots))
+    J = collect(keys(piv.pivots))
+    (permutation(I, m), permutation(J, n), length(I))
 end
 
 # private
@@ -98,6 +102,7 @@ function findPivots!(piv::Pivot)
     findCycleFreePivots!(piv)
 
     sortPivots!(piv)
+    piv
 end
 
 # Faugère-Lachartre pivot search
@@ -319,14 +324,6 @@ function topsort(data::Vector{Set{Int}}) :: Vector{Int}
     result
 end
 
-function makePermutations(piv::Pivot) :: Tuple{Permutation, Permutation, Int} 
-    (m, n) = piv.size
-    I = collect(values(piv.pivots))
-    J = collect(keys(piv.pivots))
-    (permutation(I, m), permutation(J, n), length(I))
-end
-
-# TODO: move to Utils
 function permutation(indices::Vector{Int}, length::Int) :: Permutation
     result = Int[]
     remain = OrderedSet(1:length)

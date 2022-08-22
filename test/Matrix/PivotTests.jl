@@ -4,8 +4,8 @@ using Test
     using SparseArrays
     using OrderedCollections
     using Permutations: Permutation
-    using Knots.Matrix: findPivots, pivotPermutations
-    using Knots.Matrix: Pivot, findFLPivots!, findFLColumnPivots!, findCycleFreePivots!, sortPivots!, makePermutations, permutation, occupiedCols 
+    using LinearAlgebra: I as id, UpperTriangular
+    using Knots.Matrix: Pivot, pivot, permutations, findFLPivots!, findFLColumnPivots!, findCycleFreePivots!, sortPivots!, occupiedCols, permutation
 
     function ok(B, r) 
         for i in 1 : r
@@ -94,7 +94,7 @@ using Test
 
         findCycleFreePivots!(piv)
         sortPivots!(piv)
-        (p, q, r) = makePermutations(piv)
+        (p, q, r) = permutations(piv)
 
         B = permute(A, p.data, q.data)
 
@@ -107,7 +107,8 @@ using Test
         (m, n) = (100, 100)
         A = sparse([ rand() < density ? 1 : 0 for i in 1:m, j in 1:n])
 
-        (p, q, r) = pivotPermutations(A)
+        piv = pivot(A)
+        (p, q, r) = permutations(piv)
         B = permute(A, p.data, q.data)
 
         @test r > 30
