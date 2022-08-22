@@ -70,7 +70,7 @@ function compute_incremental(H::AbstractHomology{R, RR}, k::Int; previous=nothin
 
     Aₖ = differential(C, k)
     Bₖ = (rₖ₋₁ > 0) ? 
-        Aₖ * view(Pₖ₋₁⁻¹, :, rₖ₋₁ + 1 : nₖ) : # restrict Aₖ to the complement of R^{rₖ₋₁}
+        Aₖ * Pₖ₋₁⁻¹[:, rₖ₋₁ + 1 : nₖ] : # restrict Aₖ to the complement of R^{rₖ₋₁}
         Aₖ
 
     Fₖ = snf(Bₖ; flags=flags)
@@ -102,7 +102,7 @@ function compute_reverse_incremental(H::AbstractHomology{R, RR}, k::Int; previou
 
     Aₖ₋₁ = differential(H.complex, k - deg)
     Bₖ₋₁ = (rₖ < nₖ) ? 
-        view(Qₖ⁻¹, rₖ + 1 : nₖ, : ) * Aₖ₋₁ : # compose with projection to Zₖ
+        Qₖ⁻¹[rₖ + 1 : nₖ, : ] * Aₖ₋₁ : # compose with projection to Zₖ
         Aₖ₋₁
     
     Fₖ₋₁ = snf(Bₖ₋₁; flags=flags)
