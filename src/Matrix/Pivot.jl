@@ -56,6 +56,10 @@ function pivot(A::SparseMatrix{R}) :: Pivot{R} where {R}
     findPivots!(piv)
 end
 
+function npivots(piv::Pivot) :: Int
+    length(piv.pivots)
+end
+
 function coordinates(piv::Pivot) :: Vector{CartesianIndex{2}}
     map(collect(piv.pivots)) do (j, i)
         CartesianIndex(i, j)

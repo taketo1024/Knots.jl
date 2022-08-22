@@ -1,4 +1,5 @@
 using AbstractAlgebra
+using SparseArrays: blockdiag
 
 export SNF, snf
 
@@ -14,7 +15,7 @@ mutable struct SNF{R<:RingElement}
 end
 
 function snf(A::SparseMatrix{R}; preprocess=true, flags=(false, false, false, false)) :: SNF{R} where {R<:RingElement}
-    if preprocess
+    if preprocess && density(A) < 0.5
         _snf_preprocess(A; flags=flags)
     else
         _snf(A; flags=flags)
@@ -39,19 +40,48 @@ function _snf(A::SparseMatrix{R}; flags=(false, false, false, false)) :: SNF{R} 
     SNF(S, P, Pinv, Q, Qinv)
 end
 
-function _snf_preprocess(A::SparseMatrix{R}; flags=(false, false, false, false)) where {R<:RingElement, RR<:Ring}
+function _snf_preprocess(A::SparseMatrix{R}; flags=(false, false, false, false)) :: SNF{R} where {R<:RingElement}
     piv = pivot(A)
-    (p, q) = permutations(piv)
+    npivots(piv) == 0 && return _snf(A; flags=flags)
 
-    B = permute(A, p, q)     # B = p⁻¹ A q
-    F = _snf(B, flags=flags) # S = PBQ = (Pp⁻¹) A (qQ)
+    (S, r, P, Pinv, Q, Qinv) = schur_complement(A, piv, flags=flags)
 
-    if any(flags)
-        isnothing(F.P)   || (F.P   = permute_col(F.P, inv(p)))    # Pp⁻¹
-        isnothing(F.P⁻¹) || (F.P⁻¹ = permute_row(F.P⁻¹, inv(p)))  # pP⁻¹
-        isnothing(F.Q)   || (F.Q   = permute_row(F.Q, inv(q)))    # qQ
-        isnothing(F.Q⁻¹) || (F.Q⁻¹ = permute_col(F.Q⁻¹, inv(q)))  # Q⁻¹q⁻¹
+    if min(size(S)...) > 0 
+        next = snf(S; flags=flags)
+        _snf_compose(r, P, Pinv, Q, Qinv, next)
+    else
+        SNF(fill(one(R), r), P, Pinv, Q, Qinv)
+    end
+end
+
+function _snf_compose(r, P, Pinv, Q, Qinv, next::SNF{R}) where {R} 
+    I(k) = sparse_identity_matrix(R, k)
+
+    d = vcat(fill(one(R), r), next.S)
+    
+    if !isnothing(P)
+        P = blockdiag(I(r), next.P) * P
     end
 
-    return F
+    if !isnothing(Pinv)
+        Pinv = Pinv * blockdiag(I(r), next.P⁻¹)
+    end
+
+    if !isnothing(Q)
+        Q = Q * blockdiag(I(r), next.Q)
+    end
+
+    if !isnothing(Qinv)
+        Qinv = blockdiag(I(r), next.Q⁻¹) * Qinv
+    end
+
+    if !isnothing(P) && !isnothing(Pinv)
+        @assert is_one(P * Pinv)
+    end
+
+    if !isnothing(Q) && !isnothing(Qinv)
+        @assert is_one(Q * Qinv)
+    end
+
+    SNF(d, P, Pinv, Q, Qinv)
 end

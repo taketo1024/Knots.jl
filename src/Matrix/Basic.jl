@@ -69,6 +69,18 @@ function is_zero(A::SparseMatrix) :: Bool
     true
 end
 
+function density(A::SparseMatrix) :: Float64
+    (m, n) = size(A)
+    N = m * n
+
+    if N > 0
+        nz = count(x -> !iszero(x), SparseArrays.findnz(A)[3])
+        nz / N
+    else 
+        0
+    end
+end
+
 function permute(A::SparseMatrix{R}, p::Permutation, q::Permutation) :: SparseMatrix{R} where {R}
     SparseArrays.permute(A, p.data, q.data)
 end

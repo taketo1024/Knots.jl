@@ -3,7 +3,7 @@ using Test
 @testset "SNF" begin
     using AbstractAlgebra
     using SparseArrays: sparse
-    using Knots.Matrix: SNF, snf
+    using Knots.Matrix: SNF, snf, print_matrix
     using Knots.Matrix: kb_canonical_row_x!, kb_reduce_column_x!, hnf_x, snf_kb_x_step1!, snf_kb_x_step2!, snf_x
     
     Z = zz
@@ -263,9 +263,13 @@ using Test
         ])
 
         F = snf(A; preprocess=false, flags=(true, true, true, true))
+        (d, P, Pinv, Q, Qinv) = (F.S, F.P, F.P⁻¹, F.Q, F.Q⁻¹)
 
-        @test is_one(F.P * F.P⁻¹)
-        @test is_one(F.Q * F.Q⁻¹)
+        B = P * A * Q
+
+        @test is_one(P * Pinv)
+        @test is_one(Q * Qinv)
+        @test all( map(i -> B[i, i] == d[i], 1:length(d) ))
     end
 
     @testset "snf-preprocess" begin 
@@ -279,9 +283,29 @@ using Test
         ])
 
         F = snf(A; preprocess=true, flags=(true, true, true, true))
+        (d, P, Pinv, Q, Qinv) = (F.S, F.P, F.P⁻¹, F.Q, F.Q⁻¹)
 
-        @test is_one(F.P * F.P⁻¹)
-        @test is_one(F.Q * F.Q⁻¹)
+        B = P * A * Q
+
+        @test is_one(P * Pinv)
+        @test is_one(Q * Qinv)
+        @test all( map(i -> B[i, i] == d[i], 1:length(d) ))
+    end
+
+    @testset "snf-preprocess-random" begin 
+        density = 0.1
+        (m, n) = (50, 50)
+        A = sparse([ rand() < density ? 1 : 0 for i in 1:m, j in 1:n])
+
+        F = snf(A; preprocess=true, flags=(true, true, true, true))
+
+        (d, P, Pinv, Q, Qinv) = (F.S, F.P, F.P⁻¹, F.Q, F.Q⁻¹)
+
+        B = P * A * Q
+
+        @test is_one(P * Pinv)
+        @test is_one(Q * Qinv)
+        @test all( map(i -> B[i, i] == d[i], 1:length(d) ))
     end
 
 end
