@@ -294,7 +294,7 @@ using Test
 
     @testset "snf-preprocess-random" begin 
         density = 0.1
-        (m, n) = (50, 50)
+        (m, n) = (60, 50)
         A = sparse([ rand() < density ? 1 : 0 for i in 1:m, j in 1:n])
 
         F = snf(A; preprocess=true, flags=(true, true, true, true))

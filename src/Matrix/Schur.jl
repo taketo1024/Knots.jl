@@ -11,7 +11,7 @@ function schur_complement(A::SparseMatrix{R}, piv::Pivot{R}; flags=(false, false
 
     # make left-upper of B, unittriangular
 
-    d = fill(one(R), m)
+    d = fill(one(R), n)
 
     for i in 1 : r 
         u = B[i, i]
