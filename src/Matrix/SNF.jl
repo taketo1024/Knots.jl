@@ -30,7 +30,8 @@ function _snf_preprocess(A::SparseMatrix{R}; flags=(false, false, false, false))
     piv = pivot(A)
     npivots(piv) == 0 && return _snf_dense_sort(A; flags=flags)
 
-    (S, r, P, Pinv, Q, Qinv) = schur_complement(A, piv, flags=flags)
+    (r, S, T) = schur_complement(A, piv, flags=flags)
+    (P, Pinv, Q, Qinv) = T
 
     if min(size(S)...) > 0 
         next = snf(S; flags=flags)

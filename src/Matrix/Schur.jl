@@ -3,10 +3,10 @@ using LinearAlgebra: UnitUpperTriangular
 
 function schur_complement(A::SparseMatrix{R}, piv::Pivot{R}; flags=(false, false, false, false)) where {R}
     I(k) = sparse_identity_matrix(R, k)
-    O(k, l) = spzeros(R, k, l)
 
     (m, n) = size(A)
     (p, q, r) = permutations(piv)
+
     B = permute(A, p, q) # B = p⁻¹ A q
 
     # make left-upper of B, unittriangular
@@ -21,7 +21,20 @@ function schur_complement(A::SparseMatrix{R}, piv::Pivot{R}; flags=(false, false
         d[i] = u
     end
 
-    # B = [U X] ~> [I  ]
+    T0 = Transform{SparseMatrix{R}}(
+        flags[1] ? I(m) : nothing,
+        flags[2] ? I(m) : nothing,
+        flags[3] ? spdiagm(d) : nothing,
+        flags[4] ? spdiagm(d) : nothing
+    )
+    (S, T1) = _schur_complement_U(B, r, flags)
+    T = permute( compose(T0, T1), p, q)
+
+    (r, S, T)
+end
+
+function _schur_complement_U(A::SparseMatrix{R}, r::Int, flags) where {R}
+    # A = [U X] ~> [I  ]
     #     [Y Z]    [  S]
     #
     # by 
@@ -29,59 +42,47 @@ function schur_complement(A::SparseMatrix{R}, piv::Pivot{R}; flags=(false, false
     # [U⁻¹    ] [U X] [I -U⁻¹X] = [I  ]
     # [-YU⁻¹ I] [Y Z] [    I  ]   [  S]
 
-    U = UnitUpperTriangular(B[1:r, 1:r])
+    I(k) = sparse_identity_matrix(R, k)
+    O(k, l) = spzeros(R, k, l)
+
+    (m, n) = size(A)
+
+    U = UnitUpperTriangular(A[1:r, 1:r])
     Uinv = sparse(inv(U))
 
-    X = B[1 : r, r + 1 : n]
-    Y = B[r + 1 : m, 1 : r]
-    Z = B[r + 1 : m, r + 1 : n]
+    X = A[1 : r, r + 1 : n]
+    Y = A[r + 1 : m, 1 : r]
+    Z = A[r + 1 : m, r + 1 : n]
     S = Z - Y * Uinv * X
 
-    if flags[1]
-        P = sparse_hvcat(
+    P = flags[1] ? 
+        sparse_hvcat(
             (2, 2), 
             Uinv, O(r, m - r),
             -Y * Uinv, I(m - r)
-        )
-        P = permute_col(P, inv(p))
-    else
-        P = nothing
-    end
+        ) : nothing
 
-    if flags[2]
-        Pinv = sparse_hvcat(
+    Pinv = flags[2] ? 
+        sparse_hvcat(
             (2, 2), 
             U, O(r, m - r),
             Y, I(m - r)
-        )
-        Pinv = permute_row(Pinv, inv(p))
-    else
-        Pinv = nothing
-    end
+        ) : nothing
 
-    if flags[3]
-        Q0 = spdiagm(d)
-        Q1 = sparse_hvcat(
+    Q = flags[3] ? 
+        sparse_hvcat(
             (2, 2), 
             I(r), -Uinv * X,
             O(n - r, r), I(n - r)
-        )
-        Q = permute_row(Q0 * Q1, inv(q))
-    else
-        Q = nothing
-    end
+        ) : nothing
 
-    if flags[4]
-        Q0inv = spdiagm(d)
-        Q1inv = sparse_hvcat(
+    Qinv = flags[4] ?
+        sparse_hvcat(
             (2, 2), 
             I(r), Uinv * X,
             O(n - r, r), I(n - r)
-        )
-        Qinv = permute_col(Q1inv * Q0inv, inv(q))
-    else
-        Qinv = nothing
-    end
+        ) : nothing
 
-    (S, r, P, Pinv, Q, Qinv)
+    T = Transform{SparseMatrix{R}}(P, Pinv, Q, Qinv)
+    (S, T)
 end

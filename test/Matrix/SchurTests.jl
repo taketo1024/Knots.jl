@@ -10,7 +10,8 @@ using Test
         A = sparse([ rand() < density ? 1 : 0 for i in 1:m, j in 1:n])
 
         piv = pivot(A)
-        (S, r, P, Pinv, Q, Qinv) = schur_complement(A, piv; flags=(true,true,true,true))
+        (r, S, T) = schur_complement(A, piv; flags=(true,true,true,true))
+        (P, Pinv, Q, Qinv) = T
 
         B = dropzeros(P * A * Q)
 
