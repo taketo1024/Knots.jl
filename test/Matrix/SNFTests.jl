@@ -262,8 +262,7 @@ using Test
             1 0 2 0 1 1 0 1 1
         ])
 
-        F = snf(A; preprocess=false, flags=(true, true, true, true))
-        (d, P, Pinv, Q, Qinv) = (F.S, F.P, F.P⁻¹, F.Q, F.Q⁻¹)
+        (d, P, Pinv, Q, Qinv) = snf(A; preprocess=false, flags=(true, true, true, true))
 
         B = P * A * Q
 
@@ -282,8 +281,7 @@ using Test
             1 0 2 0 1 1 0 1 1
         ])
 
-        F = snf(A; preprocess=true, flags=(true, true, true, true))
-        (d, P, Pinv, Q, Qinv) = (F.S, F.P, F.P⁻¹, F.Q, F.Q⁻¹)
+        (d, P, Pinv, Q, Qinv) = snf(A; preprocess=true, flags=(true, true, true, true))
 
         B = P * A * Q
 
@@ -297,9 +295,7 @@ using Test
         (m, n) = (60, 50)
         A = sparse([ rand() < density ? 1 : 0 for i in 1:m, j in 1:n])
 
-        F = snf(A; preprocess=true, flags=(true, true, true, true))
-
-        (d, P, Pinv, Q, Qinv) = (F.S, F.P, F.P⁻¹, F.Q, F.Q⁻¹)
+        (d, P, Pinv, Q, Qinv) = snf(A; preprocess=true, flags=(true, true, true, true))
 
         B = P * A * Q
 

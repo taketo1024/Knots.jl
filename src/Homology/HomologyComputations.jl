@@ -34,11 +34,11 @@ function compute_single(H::AbstractHomology{R, RR}, k::Int) :: AbstractHomologyS
     Fₖ₋₁ = snf(Aₖ₋₁)
     Fₖ   = snf(Aₖ)
 
-    rₖ₋₁ = length(Fₖ₋₁.S)
-    rₖ   = length(Fₖ.S)
+    rₖ₋₁ = length(Fₖ₋₁.factors)
+    rₖ   = length(Fₖ.factors)
     
     fₖ = nₖ - rₖ₋₁ - rₖ
-    tors = filter(r -> !is_unit(r), Fₖ₋₁.S)
+    tors = filter(r -> !is_unit(r), Fₖ₋₁.factors)
 
     makeSummand(H, fₖ, tors)
 end
@@ -58,10 +58,10 @@ function compute_incremental(H::AbstractHomology{R, RR}, k::Int; previous=nothin
             snf(Aₖ₋₁; flags=flags) :
             previous
 
-        Pₖ₋₁⁻¹ = Fₖ₋₁.P⁻¹
-        Sₖ₋₁ = Fₖ₋₁.S
-        rₖ₋₁ = length(Sₖ₋₁)
-        tors = filter(r -> !is_unit(r), Sₖ₋₁)
+        Pₖ₋₁⁻¹ = Fₖ₋₁.T.P⁻¹
+        eₖ₋₁ = Fₖ₋₁.factors
+        rₖ₋₁ = length(eₖ₋₁)
+        tors = filter(r -> !is_unit(r), eₖ₋₁)
     else
         Pₖ₋₁⁻¹ = nothing # not to be acccessed
         rₖ₋₁ = 0
@@ -74,8 +74,8 @@ function compute_incremental(H::AbstractHomology{R, RR}, k::Int; previous=nothin
         Aₖ
 
     Fₖ = snf(Bₖ; flags=flags)
-    Sₖ = Fₖ.S
-    rₖ = length(Sₖ)
+    eₖ = Fₖ.factors
+    rₖ = length(eₖ)
 
     fₖ = nₖ - rₖ₋₁ - rₖ
 
@@ -97,8 +97,8 @@ function compute_reverse_incremental(H::AbstractHomology{R, RR}, k::Int; previou
         previous
     end
 
-    rₖ = length(Fₖ.S)
-    Qₖ⁻¹ = Fₖ.Q⁻¹
+    rₖ = length(Fₖ.factors)
+    Qₖ⁻¹ = Fₖ.T.Q⁻¹
 
     Aₖ₋₁ = differential(H.complex, k - deg)
     Bₖ₋₁ = (rₖ < nₖ) ? 
@@ -106,11 +106,11 @@ function compute_reverse_incremental(H::AbstractHomology{R, RR}, k::Int; previou
         Aₖ₋₁
     
     Fₖ₋₁ = snf(Bₖ₋₁; flags=flags)
-    Sₖ₋₁ = Fₖ₋₁.S
-    rₖ₋₁ = length(Sₖ₋₁)
+    eₖ₋₁ = Fₖ₋₁.factors
+    rₖ₋₁ = length(eₖ₋₁)
 
     fₖ = nₖ - rₖ₋₁ - rₖ
-    tors = filter(r -> !is_unit(r), Sₖ₋₁)
+    tors = filter(r -> !is_unit(r), eₖ₋₁)
 
     (makeSummand(H, fₖ, tors), Fₖ₋₁)
 end

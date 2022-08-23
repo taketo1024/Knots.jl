@@ -64,7 +64,7 @@ function identity_transform(::Type{SparseMatrix{R}}, size::Tuple{Int, Int}; flag
     Q   = flags[3] ? I(n) : nothing
     Q⁻¹ = flags[4] ? I(n) : nothing
     
-    Transform(P, P⁻¹, Q, Q⁻¹)
+    Transform{SparseMatrix{R}}(P, P⁻¹, Q, Q⁻¹)
 end
 
 function block_diagonal(T₁::Transform{M}, T₂::Transform{M}) :: Transform{M} where {M} 
