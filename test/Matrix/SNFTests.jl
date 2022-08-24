@@ -58,6 +58,20 @@ using Test
         @test all( map(i -> B[i, i] == d[i], 1:length(d) ))
     end
 
+    @testset "snf-no-preprocess-random" begin 
+        density = 0.1
+        (m, n) = (30, 40)
+        A = sparse([ rand() < density ? 1 : 0 for i in 1:m, j in 1:n])
+
+        (d, P, Pinv, Q, Qinv) = snf(A; preprocess=false, flags=(true, true, true, true))
+
+        B = P * A * Q
+
+        @test isone(P * Pinv)
+        @test isone(Q * Qinv)
+        @test all( map(i -> B[i, i] == d[i], 1:length(d) ))
+    end
+
 end
 
 nothing
