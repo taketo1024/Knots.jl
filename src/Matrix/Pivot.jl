@@ -167,8 +167,6 @@ function findCycleFreePivots!(piv::Pivot) :: Union{Int, Nothing}
 
     remain = remainingRows(piv)
 
-    @debug "start findCycleFreePivots, remain: $(length(remain))"
-
     if Threads.nthreads() > 0
         findCycleFreePivots_p!(piv, remain)
     else 
@@ -176,7 +174,7 @@ function findCycleFreePivots!(piv::Pivot) :: Union{Int, Nothing}
     end
 
     npiv = length(piv.pivots)
-    @debug "cycle-free-pivots: $(npiv - before), total: $npiv."
+    @debug "found cycle-free-pivots: $(npiv - before), total: $npiv."
 end
 
 function findCycleFreePivots_s!(piv::Pivot, remain::Vector{Int}) :: Union{Int, Nothing}

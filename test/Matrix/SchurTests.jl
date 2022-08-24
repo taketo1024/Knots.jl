@@ -2,7 +2,7 @@ using Test
 
 @testset "Schur" begin
     using SparseArrays
-    using Knots.Matrix: pivot, schur_complement, print_matrix, is_identity, is_zero
+    using Knots.Matrix: pivot, schur_complement, print_matrix
     
     @testset "test" begin
         density = 0.1
