@@ -6,8 +6,6 @@ export SNF, snf
 
 # SNF
 
-const Flags4 = Tuple{Bool, Bool, Bool, Bool}
-
 struct SNF{R}
     factors::Vector{R}
     T::Transform{SparseMatrix{R}}
@@ -29,12 +27,12 @@ function Base.iterate(S::SNF{R}, i = 0) where {R}
     end
 end
 
-function snf(A::SparseMatrix{R}; preprocess=true, flags=(false, false, false, false)) :: SNF{R} where {R}
+function snf(A::SparseMatrix{R}; preprocess=true, flags::Flags4=(true, true, true, true)) :: SNF{R} where {R}
     @debug "snf A: $(size(A)), density: $(density(A))"
     d_threshold = 0.5
 
     if iszero(A)
-        SNF(R[], identity_transform(SparseMatrix{R}, size(A); flags=flags))
+        SNF(R[], identity_transform(SparseMatrix{R}, size(A)))
     elseif preprocess
         _snf_preprocess(A, flags)
     elseif density(A) < d_threshold
@@ -44,8 +42,9 @@ function snf(A::SparseMatrix{R}; preprocess=true, flags=(false, false, false, fa
     end
 end
 
-function _snf_preprocess(A::SparseMatrix{R}, flags) :: SNF{R} where {R}
+function _snf_preprocess(A::SparseMatrix{R}, flags::Flags4) :: SNF{R} where {R}
     @debug "snf-preprocess A: $(size(A)), density: $(density(A))"
+
     piv = pivot(A)
     npivots(piv) == 0 && return snf(A; preprocess=false, flags=flags)
 
@@ -53,14 +52,14 @@ function _snf_preprocess(A::SparseMatrix{R}, flags) :: SNF{R} where {R}
 
     if min(size(S)...) > 0 
         next = snf(S; flags=flags)
-        _snf_compose(r, T, next, flags)
+        _snf_compose(r, T, next)
     else
         d = fill(one(R), r)
         SNF(d, T)
     end
 end
 
-function _snf_sparse(A::SparseMatrix{R}, flags) :: SNF{R} where {R}
+function _snf_sparse(A::SparseMatrix{R}, flags::Flags4) :: SNF{R} where {R}
     @debug "snf-sparse A: $(size(A)), density: $(density(A))"
 
     r = min(size(A)...)
@@ -69,14 +68,12 @@ function _snf_sparse(A::SparseMatrix{R}, flags) :: SNF{R} where {R}
     d = filter(!iszero, map( i -> S[i, i], 1 : r ))
     isempty(d) && (d = R[])
 
-    T = Transform{SparseMatrix{R}}(
-        P, Pinv, Q, Qinv
-    )
+    T = Transform(P, Pinv, Q, Qinv)
 
     SNF(d, T)
 end
 
-function _snf_dense(A::SparseMatrix{R}, flags) :: SNF{R} where {R}
+function _snf_dense(A::SparseMatrix{R}, flags::Flags4) :: SNF{R} where {R}
     @debug "snf-dense A: $(size(A)), density: $(density(A))"
     I(k) = sparse_identity_matrix(R, k)
     (m, n) = size(A)
@@ -101,15 +98,14 @@ function _snf_dense(A::SparseMatrix{R}, flags) :: SNF{R} where {R}
         F = _snf_dense_sorted(B, flags)
 
         d = F.factors
-        I = identity_transform(SparseMatrix{R}, (m - k, n - l); flags=flags)
-        T2 = block_diagonal(F.T, I)
-        T = permute(T2, p, q)
+        I = identity_transform(SparseMatrix{R}, (m - k, n - l))
+        T = permute(F.T ⊕ I, p, q)
     
         SNF(d, T)
     end
 end
 
-function _snf_dense_sorted(A::SparseMatrix{R}, flags) :: SNF{R} where {R}
+function _snf_dense_sorted(A::SparseMatrix{R}, flags::Flags4) :: SNF{R} where {R}
     (m, n) = size(A)
     r = min(m, n)
 
@@ -119,23 +115,22 @@ function _snf_dense_sorted(A::SparseMatrix{R}, flags) :: SNF{R} where {R}
     d = filter(!iszero, map( i -> Sᵈ[i, i], 1 : r ))
     isempty(d) && (d = R[])
 
-    T = Transform{SparseMatrix{R}}(
-        isnothing(Pᵈ) ?  nothing : SparseMatrix{R}(Pᵈ),
-        isnothing(Pinvᵈ) ?  nothing : SparseMatrix{R}(Pinvᵈ),
-        isnothing(Qᵈ) ?  nothing : SparseMatrix{R}(Qᵈ),
-        isnothing(Qinvᵈ) ?  nothing : SparseMatrix{R}(Qinvᵈ)
+    T = Transform(
+        SparseMatrix{R}(Pᵈ),
+        SparseMatrix{R}(Pinvᵈ),
+        SparseMatrix{R}(Qᵈ),
+        SparseMatrix{R}(Qinvᵈ)
     )
 
     SNF(d, T)
 end
 
-function _snf_compose(r, T1, next::SNF{R}, flags) where {R} 
+function _snf_compose(r, T1, next::SNF{R}) where {R} 
     I(k) = sparse_identity_matrix(R, k)
 
     d = vcat(fill(one(R), r), next.factors)
-    I = identity_transform(SparseMatrix{R}, (r, r); flags=flags)
-    T2 = block_diagonal(I, next.T)
-    T = compose(T1, T2)
+    I = identity_transform(SparseMatrix{R}, (r, r))
+    T = T1 * (I ⊕ next.T)
 
     SNF(d, T)
 end

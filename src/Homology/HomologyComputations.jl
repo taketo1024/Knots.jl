@@ -24,6 +24,7 @@ using ..Matrix: SNF, snf
 function compute_single(H::AbstractHomology{R}, k::Int) :: AbstractHomologySummand{R} where {R}
     C = complex(H)
     deg = differentialDegree(C)
+    flags = (false, false, false, false) # transformation matrices are unnecessary.
 
     nₖ = length(generators(C, k))
     nₖ == 0 && return makeSummand(H, 0, R[])
@@ -31,8 +32,8 @@ function compute_single(H::AbstractHomology{R}, k::Int) :: AbstractHomologySumma
     Aₖ₋₁ = differential(C, k - deg)
     Aₖ   = differential(C, k)
 
-    Fₖ₋₁ = snf(Aₖ₋₁)
-    Fₖ   = snf(Aₖ)
+    Fₖ₋₁ = snf(Aₖ₋₁; flags=flags)
+    Fₖ   = snf(Aₖ;   flags=flags)
 
     rₖ₋₁ = length(Fₖ₋₁.factors)
     rₖ   = length(Fₖ.factors)

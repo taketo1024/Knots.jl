@@ -1,9 +1,7 @@
 using SparseArrays: blockdiag, sparse_hvcat, spdiagm
 using LinearAlgebra: UnitUpperTriangular
 
-function schur_complement(A::SparseMatrix{R}, piv::Pivot{R}; flags=(false, false, false, false)) where {R}
-    I(k) = sparse_identity_matrix(R, k)
-
+function schur_complement(A::SparseMatrix{R}, piv::Pivot{R}; flags=(true, true, true, true)) where {R}
     (m, n) = size(A)
     (p, q, r) = permutations(piv)
 
@@ -21,14 +19,15 @@ function schur_complement(A::SparseMatrix{R}, piv::Pivot{R}; flags=(false, false
         d[i] = u
     end
 
-    T0 = Transform{SparseMatrix{R}}(
-        flags[1] ? I(m) : nothing,
-        flags[2] ? I(m) : nothing,
-        flags[3] ? spdiagm(d) : nothing,
-        flags[4] ? spdiagm(d) : nothing
-    )
     (S, T1) = _schur_complement_U(B, r, flags)
-    T = permute( compose(T0, T1), p, q)
+
+    if any(flags)
+        I(k) = sparse_identity_matrix(R, k)
+        T0 = Transform(I(m), I(m), spdiagm(d), spdiagm(d))
+        T = permute(T0 * T1, p, q)
+    else
+        T = identity_transform(SparseMatrix{R}, (m, n))
+    end
 
     (r, S, T)
 end
@@ -60,29 +59,30 @@ function _schur_complement_U(A::SparseMatrix{R}, r::Int, flags) where {R}
             (2, 2), 
             Uinv, O(r, m - r),
             -Y * Uinv, I(m - r)
-        ) : nothing
+        ) : I(m)
 
     Pinv = flags[2] ? 
         sparse_hvcat(
             (2, 2), 
             U, O(r, m - r),
             Y, I(m - r)
-        ) : nothing
+        ) : I(m)
 
     Q = flags[3] ? 
         sparse_hvcat(
             (2, 2), 
             I(r), -Uinv * X,
             O(n - r, r), I(n - r)
-        ) : nothing
+        ) : I(n)
 
     Qinv = flags[4] ?
         sparse_hvcat(
             (2, 2), 
             I(r), Uinv * X,
             O(n - r, r), I(n - r)
-        ) : nothing
+        ) : I(n)
 
-    T = Transform{SparseMatrix{R}}(P, Pinv, Q, Qinv)
+    T = Transform(P, Pinv, Q, Qinv)
+    
     (S, T)
 end
