@@ -30,20 +30,24 @@ function Base.iterate(S::SNF{R}, i = 0) where {R}
 end
 
 function snf(A::SparseMatrix{R}; preprocess=true, flags=(false, false, false, false)) :: SNF{R} where {R}
-    d_threshold = 0.75
+    @debug "snf A: $(size(A)), density: $(density(A))"
+    d_threshold = 0.5
 
     if iszero(A)
         SNF(R[], identity_transform(SparseMatrix{R}, size(A); flags=flags))
-    elseif preprocess && density(A) < d_threshold
+    elseif preprocess
         _snf_preprocess(A, flags)
+    elseif density(A) < d_threshold
+        _snf_sparse(A, flags)
     else
         _snf_dense(A, flags)
     end
 end
 
 function _snf_preprocess(A::SparseMatrix{R}, flags) :: SNF{R} where {R}
+    @debug "snf-preprocess A: $(size(A)), density: $(density(A))"
     piv = pivot(A)
-    npivots(piv) == 0 && return _snf_dense(A, flags)
+    npivots(piv) == 0 && return snf(A; preprocess=false, flags=flags)
 
     (r, S, T) = schur_complement(A, piv; flags=flags)
 
@@ -56,18 +60,24 @@ function _snf_preprocess(A::SparseMatrix{R}, flags) :: SNF{R} where {R}
     end
 end
 
-function _snf_compose(r, T1, next::SNF{R}, flags) where {R} 
-    I(k) = sparse_identity_matrix(R, k)
+function _snf_sparse(A::SparseMatrix{R}, flags) :: SNF{R} where {R}
+    @debug "snf-sparse A: $(size(A)), density: $(density(A))"
 
-    d = vcat(fill(one(R), r), next.factors)
-    I = identity_transform(SparseMatrix{R}, (r, r); flags=flags)
-    T2 = block_diagonal(I, next.T)
-    T = compose(T1, T2)
+    r = min(size(A)...)
+    (Pinv, Qinv, S, P, Q) = SmithNormalForm_x.snf(A)
+
+    d = filter(!iszero, map( i -> S[i, i], 1 : r ))
+    isempty(d) && (d = R[])
+
+    T = Transform{SparseMatrix{R}}(
+        P, Pinv, Q, Qinv
+    )
 
     SNF(d, T)
 end
 
 function _snf_dense(A::SparseMatrix{R}, flags) :: SNF{R} where {R}
+    @debug "snf-dense A: $(size(A)), density: $(density(A))"
     I(k) = sparse_identity_matrix(R, k)
     (m, n) = size(A)
 
@@ -115,6 +125,17 @@ function _snf_dense_sorted(A::SparseMatrix{R}, flags) :: SNF{R} where {R}
         isnothing(Qᵈ) ?  nothing : SparseMatrix{R}(Qᵈ),
         isnothing(Qinvᵈ) ?  nothing : SparseMatrix{R}(Qinvᵈ)
     )
+
+    SNF(d, T)
+end
+
+function _snf_compose(r, T1, next::SNF{R}, flags) where {R} 
+    I(k) = sparse_identity_matrix(R, k)
+
+    d = vcat(fill(one(R), r), next.factors)
+    I = identity_transform(SparseMatrix{R}, (r, r); flags=flags)
+    T2 = block_diagonal(I, next.T)
+    T = compose(T1, T2)
 
     SNF(d, T)
 end
