@@ -7,6 +7,16 @@ using LinearAlgebra
 using SparseArrays
 using Base.CoreLogging
 
+function snf(M::AbstractMatrix{R}; inverse=true) where {R}
+    (U, V, D, Uinv, Vinv) = init(M, inverse=inverse)
+
+    _snf_step1(U, V, D, Uinv, Vinv; inverse=inverse)
+    _snf_step2(U, V, D, Uinv, Vinv; inverse=inverse)
+    _snf_step3(U, V, D, Uinv, Vinv; inverse=inverse)
+
+    (U, V, D, Uinv, Vinv)
+end
+
 function bezout(a::R, b::R) where {R}
     (g, s, t) = gcdx(a, b)
 
@@ -21,14 +31,14 @@ function bezout(a::R, b::R) where {R}
     (s, t, g)
 end
 
-function divisable(y::R, x::R ) where {R}
-  x == zero(R) && return y == zero(R)
-  return div(y,x)*x == y
+function divisable(y::R, x::R) where {R}
+    x == zero(R) && return y == zero(R)
+    return div(y, x) * x == y
 end
 
 function divide(y::R, x::R) where {R}
     if x != -one(R)
-        return div(y,x)
+        return div(y, x)
     else
         return y * x
     end
@@ -39,7 +49,7 @@ function rcountnz(X::AbstractMatrix{R}, i) where {R}
     z = zero(R)
     @inbounds for row in eachrow(X)
         if row[i] != z
-           c += 1
+            c += 1
         end
     end
     return c
@@ -50,7 +60,7 @@ function ccountnz(X::AbstractMatrix{R}, j) where {R}
     z = zero(R)
     @inbounds for col in eachcol(X)
         if col[j] != z
-           c += 1
+            c += 1
         end
     end
     return c
@@ -80,8 +90,8 @@ function rowelimination(D::AbstractMatrix{R}, a::R, b::R, c::R, d::R, i::Int, j:
     @inbounds for col in eachcol(D)
         t = col[i]
         s = col[j]
-        col[i] = a*t + b*s
-        col[j] = c*t + d*s
+        col[i] = a * t + b * s
+        col[j] = c * t + d * s
     end
     return D
 end
@@ -90,19 +100,19 @@ function colelimination(D::AbstractMatrix{R}, a::R, b::R, c::R, d::R, i::Int, j:
     @inbounds for row in eachrow(D)
         t = row[i]
         s = row[j]
-        row[i] = a*t + b*s
-        row[j] = c*t + d*s
+        row[i] = a * t + b * s
+        row[j] = c * t + d * s
     end
     return D
 end
 
 function rowpivot(U::AbstractArray{R,2},
-                  Uinv::AbstractArray{R,2},
-                  D::AbstractArray{R,2},
-                  i, j; inverse=true) where {R}
+    Uinv::AbstractArray{R,2},
+    D::AbstractArray{R,2},
+    i, j; inverse=true) where {R}
     for k in reverse!(findall(!iszero, view(D, :, j)))
-        a = D[i,j]
-        b = D[k,j]
+        a = D[i, j]
+        b = D[k, j]
 
         i == k && continue
 
@@ -117,12 +127,12 @@ function rowpivot(U::AbstractArray{R,2},
 end
 
 function colpivot(V::AbstractArray{R,2},
-                  Vinv::AbstractArray{R,2},
-                  D::AbstractArray{R,2},
-                  i, j; inverse=true) where {R}
+    Vinv::AbstractArray{R,2},
+    D::AbstractArray{R,2},
+    i, j; inverse=true) where {R}
     for k in reverse!(findall(!iszero, view(D, i, :)))
-        a = D[i,j]
-        b = D[i,k]
+        a = D[i, j]
+        b = D[i, k]
 
         j == k && continue
 
@@ -137,33 +147,33 @@ function colpivot(V::AbstractArray{R,2},
 end
 
 function smithpivot(U::AbstractArray{R,2},
-                    Uinv::AbstractArray{R,2},
-                    V::AbstractArray{R,2},
-                    Vinv::AbstractArray{R,2},
-                    D::AbstractArray{R,2},
-                    i, j; inverse=true) where {R}
+    Uinv::AbstractArray{R,2},
+    V::AbstractArray{R,2},
+    Vinv::AbstractArray{R,2},
+    D::AbstractArray{R,2},
+    i, j; inverse=true) where {R}
 
-    pivot = D[i,j]
+    pivot = D[i, j]
     @assert pivot != zero(R) "Pivot cannot be zero"
-    while ccountnz(D,i) > 1 || rcountnz(D,j) > 1
+    while ccountnz(D, i) > 1 || rcountnz(D, j) > 1
         colpivot(V, Vinv, D, i, j, inverse=inverse)
         rowpivot(U, Uinv, D, i, j, inverse=inverse)
     end
 end
 
-function init(M::AbstractSparseMatrix{R,Ti}; inverse=true) where {R, Ti}
+function init(M::AbstractSparseMatrix{R,Ti}; inverse=true) where {R,Ti}
     D = copy(M)
     rows, cols = size(M)
 
     U = spzeros(R, rows, rows)
     for i in 1:rows
-        U[i,i] = one(R)
+        U[i, i] = one(R)
     end
     Uinv = inverse ? copy(U) : spzeros(R, 0, 0)
 
     V = spzeros(R, cols, cols)
     for i in 1:cols
-        V[i,i] = one(R)
+        V[i, i] = one(R)
     end
     Vinv = inverse ? copy(V) : spzeros(R, 0, 0)
 
@@ -176,40 +186,45 @@ function init(M::AbstractMatrix{R}; inverse=true) where {R}
 
     U = zeros(R, rows, rows)
     for i in 1:rows
-        U[i,i] = one(R)
+        U[i, i] = one(R)
     end
     Uinv = inverse ? copy(U) : zeros(R, 0, 0)
 
     V = zeros(R, cols, cols)
     for i in 1:cols
-        V[i,i] = one(R)
+        V[i, i] = one(R)
     end
     Vinv = inverse ? copy(V) : zeros(R, 0, 0)
 
     return U, V, D, Uinv, Vinv
 end
 
-formatmtx(M) =  size(M,1) == 0 ? "[]" : repr(collect(M); context=IOContext(stdout, :compact => true))
+formatmtx(M) = size(M, 1) == 0 ? "[]" : repr(collect(M); context=IOContext(stdout, :compact => true))
 
-function snf(M::AbstractMatrix{R}; inverse=true) where {R}
-    rows, cols = size(M)
-    U, V, D, Uinv, Vinv = init(M, inverse=inverse)
+function _snf_step1(U::AbstractMatrix{R},
+    V::AbstractMatrix{R},
+    D::AbstractMatrix{R},
+    Uinv::AbstractMatrix{R},
+    Vinv::AbstractMatrix{R}
+    ; inverse=true) where {R}
 
+    rows, cols = size(D)
     t = 1
-    for j in 1:cols
-        @debug "Working on column $j out of $cols" D=formatmtx(D)
 
-        rcountnz(D,j) == 0 && continue
+    for j in 1:cols
+        @debug "Working on column $j out of $cols" D = formatmtx(D)
+
+        rcountnz(D, j) == 0 && continue
 
         prow = 1
-        if D[t,t] != zero(R)
+        if D[t, t] != zero(R)
             prow = t
         else
             # Good pivot row for j-th column is the one
             # that have a smallest number of elements
             rsize = typemax(R)
             for i in 1:rows
-                if D[i,j] != zero(R)
+                if D[i, j] != zero(R)
                     c = count(!iszero, view(D, i, :))
                     if c < rsize
                         rsize = c
@@ -219,12 +234,12 @@ function snf(M::AbstractMatrix{R}; inverse=true) where {R}
             end
         end
 
-        @debug "Pivot Row selected: t = $t, pivot = $prow" D=formatmtx(D)
+        @debug "Pivot Row selected: t = $t, pivot = $prow" D = formatmtx(D)
         rswap!(D, t, prow)
         inverse && rswap!(Uinv, t, prow)
         cswap!(U, t, prow)
 
-        @debug "Performing the pivot step at (t=$t, j=$j)" D=formatmtx(D)
+        @debug "Performing the pivot step at (t=$t, j=$j)" D = formatmtx(D)
         smithpivot(U, Uinv, V, Vinv, D, t, j, inverse=inverse)
 
         cswap!(D, t, j)
@@ -233,8 +248,16 @@ function snf(M::AbstractMatrix{R}; inverse=true) where {R}
 
         t += 1
 
-        @logmsg (Base.CoreLogging.Debug-1) "Factorization" D=formatmtx(D) U=formatmtx(U) V=formatmtx(V) U⁻¹=formatmtx(Uinv) V⁻¹=formatmtx(Vinv)
+        @logmsg (Base.CoreLogging.Debug - 1) "Factorization" D = formatmtx(D) U = formatmtx(U) V = formatmtx(V) U⁻¹ = formatmtx(Uinv) V⁻¹ = formatmtx(Vinv)
     end
+end
+
+function _snf_step2(U::AbstractMatrix{R},
+    V::AbstractMatrix{R},
+    D::AbstractMatrix{R},
+    Uinv::AbstractMatrix{R},
+    Vinv::AbstractMatrix{R}
+    ; inverse=true) where {R}
 
     # Make sure that d_i is divisible be d_{i+1}.
     r = minimum(size(D))
@@ -242,16 +265,26 @@ function snf(M::AbstractMatrix{R}; inverse=true) where {R}
     while pass
         pass = false
         for i in 1:r-1
-            divisable(D[i+1,i+1], D[i,i]) && continue
+            divisable(D[i+1, i+1], D[i, i]) && continue
             pass = true
-            D[i+1,i] = D[i+1,i+1]
+            D[i+1, i] = D[i+1, i+1]
 
-            colelimination(Vinv, one(R), one(R), zero(R), one(R), i, i+1)
-            rowelimination(V, one(R), zero(R), -one(R), one(R), i, i+1)
+            colelimination(Vinv, one(R), one(R), zero(R), one(R), i, i + 1)
+            rowelimination(V, one(R), zero(R), -one(R), one(R), i, i + 1)
 
             smithpivot(U, Uinv, V, Vinv, D, i, i, inverse=inverse)
         end
     end
+end
+
+function _snf_step3(U::AbstractMatrix{R},
+    V::AbstractMatrix{R},
+    D::AbstractMatrix{R},
+    Uinv::AbstractMatrix{R},
+    Vinv::AbstractMatrix{R}
+    ; inverse=true) where {R}
+
+    rows, cols = size(D)
 
     # To guarantee SNFⱼ = Λⱼ ≥ 0 we absorb the sign of Λ into T and T⁻¹, s.t.
     #    Λ′ = Λ*sign(Λ),   T′ = sign(Λ)*T,    and    T⁻¹′ = T⁻¹*sign(Λ),
@@ -259,16 +292,16 @@ function snf(M::AbstractMatrix{R}; inverse=true) where {R}
     # and also that Λ = S⁻¹XT⁻¹ ⇒ Λ′ = S⁻¹XT⁻¹′.
     for j in 1:rows
         j > cols && break
-        Λⱼ = D[j,j]
+        Λⱼ = D[j, j]
         if Λⱼ < 0
-            @views V[j,:]    .*= -1 # T′   = sign(Λ)*T    [rows]
+            @views V[j, :] .*= -1 # T′   = sign(Λ)*T    [rows]
             if inverse
-                @views Vinv[:,j] .*= -1 # T⁻¹′ = T⁻¹*sign(Λ)  [columns]
+                @views Vinv[:, j] .*= -1 # T⁻¹′ = T⁻¹*sign(Λ)  [columns]
             end
-            D[j,j] = abs(Λⱼ)        # Λ′ = Λ*sign(Λ)
+            D[j, j] = abs(Λⱼ)        # Λ′ = Λ*sign(Λ)
         end
     end
-    @logmsg (Base.CoreLogging.Debug-1) "Factorization" D=formatmtx(D) U=formatmtx(U) V=formatmtx(V) U⁻¹=formatmtx(Uinv) V⁻¹=formatmtx(Vinv)
+    @logmsg (Base.CoreLogging.Debug - 1) "Factorization" D = formatmtx(D) U = formatmtx(U) V = formatmtx(V) U⁻¹ = formatmtx(Uinv) V⁻¹ = formatmtx(Vinv)
 
     if issparse(D)
         return dropzeros!(U), dropzeros!(V), dropzeros!(D), dropzeros!(Uinv), dropzeros!(Vinv)
