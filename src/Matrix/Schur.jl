@@ -17,7 +17,7 @@ function schur_complement(A::SparseMatrix{R}, piv::Pivot{R}; flags=(false, false
         u = B[i, i]
         isone(u) && continue
 
-        B[:, i] *= u # col-ops are faster
+        B[:, i] .*= u # col-ops are faster
         d[i] = u
     end
 

@@ -6,6 +6,9 @@ module SmithNormalForm_x
 using LinearAlgebra
 using SparseArrays
 using Base.CoreLogging
+using ...Extensions: isunit, normalizing_unit
+
+# U D V = M, Uinv M Vinv = D
 
 function snf(M::AbstractMatrix{R}; inverse=true) where {R}
     (U, V, D, Uinv, Vinv) = init(M, inverse=inverse)
@@ -19,21 +22,12 @@ end
 
 function bezout(a::R, b::R) where {R}
     (g, s, t) = gcdx(a, b)
-
-    if g == a
-        s = one(R)
-        t = zero(R)
-    elseif g == -a
-        s = -one(R)
-        t = zero(R)
-    end
-
     (s, t, g)
 end
 
 function divisable(y::R, x::R) where {R}
     x == zero(R) && return y == zero(R)
-    return div(y, x) * x == y
+    return iszero(y % x)
 end
 
 function divide(y::R, x::R) where {R}
@@ -44,22 +38,22 @@ function divide(y::R, x::R) where {R}
     end
 end
 
-function rcountnz(X::AbstractMatrix{R}, i) where {R}
+function rcountnz(X::AbstractMatrix{R}, j::Int) where {R}
     c = 0
     z = zero(R)
     @inbounds for row in eachrow(X)
-        if row[i] != z
+        if row[j] != z
             c += 1
         end
     end
     return c
 end
 
-function ccountnz(X::AbstractMatrix{R}, j) where {R}
+function ccountnz(X::AbstractMatrix{R}, i::Int) where {R}
     c = 0
     z = zero(R)
     @inbounds for col in eachcol(X)
-        if col[j] != z
+        if col[i] != z
             c += 1
         end
     end
@@ -69,9 +63,7 @@ end
 function rswap!(M::AbstractMatrix, r1::Int, r2::Int)
     r1 == r2 && return M
     @inbounds for col in eachcol(M)
-        tmp = col[r1]
-        col[r1] = col[r2]
-        col[r2] = tmp
+        col[r1], col[r2] = col[r2], col[r1]
     end
     return M
 end
@@ -79,9 +71,7 @@ end
 function cswap!(M::AbstractMatrix, c1::Int, c2::Int)
     c1 == c2 && return M
     @inbounds for row in eachrow(M)
-        tmp = row[c1]
-        row[c1] = row[c2]
-        row[c2] = tmp
+        row[c1], row[c2] = row[c2], row[c1]
     end
     return M
 end
@@ -106,9 +96,9 @@ function colelimination(D::AbstractMatrix{R}, a::R, b::R, c::R, d::R, i::Int, j:
     return D
 end
 
-function rowpivot(U::AbstractArray{R,2},
-    Uinv::AbstractArray{R,2},
-    D::AbstractArray{R,2},
+function rowpivot(U::AbstractMatrix{R},
+    Uinv::AbstractMatrix{R},
+    D::AbstractMatrix{R},
     i, j; inverse=true) where {R}
     for k in reverse!(findall(!iszero, view(D, :, j)))
         a = D[i, j]
@@ -126,9 +116,9 @@ function rowpivot(U::AbstractArray{R,2},
     end
 end
 
-function colpivot(V::AbstractArray{R,2},
-    Vinv::AbstractArray{R,2},
-    D::AbstractArray{R,2},
+function colpivot(V::AbstractMatrix{R},
+    Vinv::AbstractMatrix{R},
+    D::AbstractMatrix{R},
     i, j; inverse=true) where {R}
     for k in reverse!(findall(!iszero, view(D, i, :)))
         a = D[i, j]
@@ -146,11 +136,11 @@ function colpivot(V::AbstractArray{R,2},
     end
 end
 
-function smithpivot(U::AbstractArray{R,2},
-    Uinv::AbstractArray{R,2},
-    V::AbstractArray{R,2},
-    Vinv::AbstractArray{R,2},
-    D::AbstractArray{R,2},
+function smithpivot(U::AbstractMatrix{R},
+    Uinv::AbstractMatrix{R},
+    V::AbstractMatrix{R},
+    Vinv::AbstractMatrix{R},
+    D::AbstractMatrix{R},
     i, j; inverse=true) where {R}
 
     pivot = D[i, j]
@@ -292,14 +282,16 @@ function _snf_step3(U::AbstractMatrix{R},
     # and also that Λ = S⁻¹XT⁻¹ ⇒ Λ′ = S⁻¹XT⁻¹′.
     for j in 1:rows
         j > cols && break
-        Λⱼ = D[j, j]
-        if Λⱼ < 0
-            @views V[j, :] .*= -1 # T′   = sign(Λ)*T    [rows]
-            if inverse
-                @views Vinv[:, j] .*= -1 # T⁻¹′ = T⁻¹*sign(Λ)  [columns]
-            end
-            D[j, j] = abs(Λⱼ)        # Λ′ = Λ*sign(Λ)
+        d = D[j, j]
+
+        (u, uinv) = normalizing_unit(d)
+        isone(u) && return
+
+        @views V[j, :] .*= uinv
+        if inverse
+            @views Vinv[:, j] .*= u
         end
+        D[j, j] *= u
     end
     @logmsg (Base.CoreLogging.Debug - 1) "Factorization" D = formatmtx(D) U = formatmtx(U) V = formatmtx(V) U⁻¹ = formatmtx(Uinv) V⁻¹ = formatmtx(Vinv)
 

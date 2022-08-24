@@ -1,4 +1,4 @@
-using AbstractAlgebra: is_unit
+using ..Extensions: isunit
 using ..Matrix: SNF, snf
 
 #  Homology computations:
@@ -38,7 +38,7 @@ function compute_single(H::AbstractHomology{R}, k::Int) :: AbstractHomologySumma
     rₖ   = length(Fₖ.factors)
     
     fₖ = nₖ - rₖ₋₁ - rₖ
-    tors = filter(r -> !is_unit(r), Fₖ₋₁.factors)
+    tors = filter(r -> !isunit(r), Fₖ₋₁.factors)
 
     makeSummand(H, fₖ, tors)
 end
@@ -61,7 +61,7 @@ function compute_incremental(H::AbstractHomology{R}, k::Int; previous=nothing) :
         Pₖ₋₁⁻¹ = Fₖ₋₁.T.P⁻¹
         eₖ₋₁ = Fₖ₋₁.factors
         rₖ₋₁ = length(eₖ₋₁)
-        tors = filter(r -> !is_unit(r), eₖ₋₁)
+        tors = filter(r -> !isunit(r), eₖ₋₁)
     else
         Pₖ₋₁⁻¹ = nothing # not to be acccessed
         rₖ₋₁ = 0
@@ -110,7 +110,7 @@ function compute_reverse_incremental(H::AbstractHomology{R}, k::Int; previous=no
     rₖ₋₁ = length(eₖ₋₁)
 
     fₖ = nₖ - rₖ₋₁ - rₖ
-    tors = filter(r -> !is_unit(r), eₖ₋₁)
+    tors = filter(r -> !isunit(r), eₖ₋₁)
 
     (makeSummand(H, fₖ, tors), Fₖ₋₁)
 end
