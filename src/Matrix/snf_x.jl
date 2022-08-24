@@ -153,14 +153,38 @@ function kb_canonical_row_x!(H, P, Pinv, r::Int, c::Int)
     n = ncols(H)
 
     cu = canonical_unit(H[r, c])
-    if !isone(cu)
+    isone(cu) && return
+
+    if isone(-cu)
         # update H
         for j = c:n
+            iszero(H[r, j]) && continue
+            H[r, j] = -H[r, j]
+        end
+
+        # update P
+        !isnothing(P) && for j = 1:m
+            iszero(P[r, j]) && continue
+            P[r, j] = -P[r, j]
+        end
+
+        # update P⁻¹.
+        # D(r, r; u)⁻¹ = D(r, r; u⁻¹).
+        # (multiply D(r, r; u⁻¹) from right) == (col[r] *= u⁻¹)
+        !isnothing(Pinv) && for j = 1:m
+            iszero(Pinv[j, r]) && continue
+            Pinv[j, r] = -Pinv[j, r]
+        end
+    else 
+        # update H
+        for j = c:n
+            iszero(H[r, j]) && continue
             H[r, j] = divexact(H[r, j], cu)
         end
 
         # update P
         !isnothing(P) && for j = 1:m
+            iszero(P[r, j]) && continue
             P[r, j] = divexact(P[r, j], cu)
         end
 
@@ -168,6 +192,7 @@ function kb_canonical_row_x!(H, P, Pinv, r::Int, c::Int)
         # D(r, r; u)⁻¹ = D(r, r; u⁻¹).
         # (multiply D(r, r; u⁻¹) from right) == (col[r] *= u⁻¹)
         !isnothing(Pinv) && for j = 1:m
+            iszero(Pinv[j, r]) && continue
             Pinv[j, r] = Pinv[j, r] * cu
         end
     end
@@ -202,6 +227,7 @@ function kb_reduce_column_x!(H, P, Pinv, pivot::Vector{Int}, c::Int, start_eleme
         end
 
         q = -div(H[p, c], H[r, c])
+        iszero(q) && continue
 
         # update H
         for j = c:n
