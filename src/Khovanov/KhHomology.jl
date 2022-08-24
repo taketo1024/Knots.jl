@@ -40,6 +40,6 @@ function Homology.asString(H::KhHomology) :: String
     l = H.complex.cube.link
     A = H.complex.cube.structure
     str = invoke(Homology.asString, Tuple{AbstractHomology}, H)
-    lines = ["L = $l", A, "---", str]
+    lines = ["L = $l", A, "---", str, "---"]
     join(lines, "\n")
 end
