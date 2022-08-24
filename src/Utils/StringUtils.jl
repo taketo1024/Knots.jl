@@ -18,14 +18,17 @@ function superscript(i::Int) :: String
     join(c)
 end
 
+using Polynomials
+
 function symbol(R) :: String
     if R <: Integer
         "Z"
     elseif R <: Rational
         "Q"
-    # elseif isa(R, AbstractAlgebra.GFField)
-    #     p = characteristic(R)
-    #     "F$(subscript(p))"
+    elseif R <: Polynomial
+        S = typeof(coeffs(R(0))[1]) # isn't there a better way?
+        x = variable(R)
+        "$(symbol(S))[$x]"
     # elseif isa(R, AbstractAlgebra.PolyRing) || isa(R, AbstractAlgebra.MPolyRing)
     #     S = base_ring(R)
     #     vars = collect(AbstractAlgebra.symbols(R))

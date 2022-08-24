@@ -24,10 +24,6 @@ struct KhAlgStructure{R}
     t::R
 end
 
-KhAlgStructure(h::R, t::R) where {R} = begin
-    KhAlgStructure(h, t)
-end
-
 KhAlgStructure(name::String) = begin
     (R, h, t) = _selectAlgStructure(name)
     KhAlgStructure(h, t)
@@ -75,13 +71,15 @@ function asString(A::KhAlgStructure) :: String
     "R = $(Utils.symbol(R)), (h, t) = ($h, $t)"
 end
 
+using Polynomials
+
 function _selectAlgStructure(name::String) 
     Z = Int
     Q = Rational{Int}
     # F2 = AbstractAlgebra.GF(2)
     # F3 = AbstractAlgebra.GF(3)
 
-    (R) = if startswith(name, "Z-")
+    R = if startswith(name, "Z-")
         Z
     elseif startswith(name, "Q-")
         Q
@@ -89,18 +87,18 @@ function _selectAlgStructure(name::String)
     #     F2
     # elseif startswith(name, "F3-")
     #     F3
-    # elseif startswith(name, "Z[h]-")
-    #     PolynomialRing(ZZ, :h)[1]
-    # elseif startswith(name, "Q[h]-")
-    #     PolynomialRing(QQ, :h)[1]
+    elseif startswith(name, "Z[h]-")
+        Polynomial{Z, :h}
+    elseif startswith(name, "Q[h]-")
+        Polynomial{Q, :h}
     # elseif startswith(name, "F2[h]-")
     #     PolynomialRing(F2, :h)[1]
     # elseif startswith(name, "F3[h]-")
     #     PolynomialRing(F3, :h)[1]
-    # elseif startswith(name, "Z[t]-")
-    #     PolynomialRing(ZZ, :t)[1]
-    # elseif startswith(name, "Q[t]-")
-    #     PolynomialRing(QQ, :t)[1]
+    elseif startswith(name, "Z[t]-")
+        Polynomial{Z, :t}
+    elseif startswith(name, "Q[t]-")
+        Polynomial{Q, :t}
     # elseif startswith(name, "F2[t]-")
     #     PolynomialRing(F2, :t)[1]
     # elseif startswith(name, "F3[t]-")
@@ -123,10 +121,10 @@ function _selectAlgStructure(name::String)
         (R(1), R(0))
     elseif endswith(name, "Lee")
         (R(0), R(1))
-    # elseif endswith(name, "[h]-bigraded")
-    #     (R([0, 1]), R(0))
-    # elseif endswith(name, "[t]-bigraded")
-    #     (R(0), R([0, 1]))
+    elseif endswith(name, "[h]-bigraded")
+        (R([0, 1]), R(0))
+    elseif endswith(name, "[t]-bigraded")
+        (R(0), R([0, 1]))
     # elseif endswith(name, "[h,t]-bigraded")
     #     (R([1], [[1, 0]]), R([1], [[0, 1]]))
     else
