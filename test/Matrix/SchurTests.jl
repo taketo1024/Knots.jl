@@ -15,11 +15,11 @@ using Test
 
         B = dropzeros(P * A * Q)
 
-        @test is_identity(B[1:r, 1:r])
-        @test is_zero(B[1:r, r+1:n])
-        @test is_zero(B[r+1:m, 1:r])
+        @test isone(B[1:r, 1:r])
+        @test iszero(B[1:r, r+1:n])
+        @test iszero(B[r+1:m, 1:r])
         @test B[r+1:m, r+1:n] == S
-        @test is_identity(P * Pinv)
-        @test is_identity(Q * Qinv)
+        @test isone(P * Pinv)
+        @test isone(Q * Qinv)
     end
 end
