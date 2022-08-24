@@ -1,4 +1,4 @@
-using ..Utils
+using ..Extensions: symbol
 
 # KhAlgGenerator
 # Generators of A = R[X]/(X^2 - hX - t) ≅ R<1, X>
@@ -25,7 +25,7 @@ struct KhAlgStructure{R}
 end
 
 KhAlgStructure(name::String) = begin
-    (R, h, t) = _selectAlgStructure(name)
+    (h, t) = _selectAlgStructure(name)
     KhAlgStructure(h, t)
 end
 
@@ -68,49 +68,42 @@ end
 
 function asString(A::KhAlgStructure) :: String
     (R, h, t) = (typeof(A.h), A.h, A.t)
-    "R = $(Utils.symbol(R)), (h, t) = ($h, $t)"
+    "R = $(symbol(R)), (h, t) = ($h, $t)"
 end
 
+using GaloisFields
 using Polynomials
 
 function _selectAlgStructure(name::String) 
     Z = Int
     Q = Rational{Int}
-    # F2 = AbstractAlgebra.GF(2)
-    # F3 = AbstractAlgebra.GF(3)
+    F2 = @GaloisField(2)
+    F3 = @GaloisField(3)
 
     R = if startswith(name, "Z-")
         Z
     elseif startswith(name, "Q-")
         Q
-    # elseif startswith(name, "F2-")
-    #     F2
-    # elseif startswith(name, "F3-")
-    #     F3
+    elseif startswith(name, "F2-")
+        F2
+    elseif startswith(name, "F3-")
+        F3
     elseif startswith(name, "Z[h]-")
         Polynomial{Z, :h}
     elseif startswith(name, "Q[h]-")
         Polynomial{Q, :h}
-    # elseif startswith(name, "F2[h]-")
-    #     PolynomialRing(F2, :h)[1]
-    # elseif startswith(name, "F3[h]-")
-    #     PolynomialRing(F3, :h)[1]
+    elseif startswith(name, "F2[h]-")
+        Polynomial{F2, :h}
+    elseif startswith(name, "F3[h]-")
+        Polynomial{F3, :h}
     elseif startswith(name, "Z[t]-")
         Polynomial{Z, :t}
     elseif startswith(name, "Q[t]-")
         Polynomial{Q, :t}
-    # elseif startswith(name, "F2[t]-")
-    #     PolynomialRing(F2, :t)[1]
-    # elseif startswith(name, "F3[t]-")
-    #     PolynomialRing(F3, :t)[1]
-    # elseif startswith(name, "Z[h,t]-")
-    #     PolynomialRing(ZZ, [:h, :t])[1]
-    # elseif startswith(name, "Q[h,t]-")
-    #     PolynomialRing(QQ, [:h, :t])[1]
-    # elseif startswith(name, "F2[h,t]-")
-    #     PolynomialRing(F2, [:h, :t])[1]
-    # elseif startswith(name, "F3[h,t]-")
-    #     PolynomialRing(F3, [:h, :t])[1]
+    elseif startswith(name, "F2[t]-")
+        Polynomial{F2, :t}
+    elseif startswith(name, "F3[t]-")
+        Polynomial{F3, :t}
     else
         Z
     end
@@ -125,13 +118,11 @@ function _selectAlgStructure(name::String)
         (R([0, 1]), R(0))
     elseif endswith(name, "[t]-bigraded")
         (R(0), R([0, 1]))
-    # elseif endswith(name, "[h,t]-bigraded")
-    #     (R([1], [[1, 0]]), R([1], [[0, 1]]))
     else
         throw(Exception)
     end
 
-    (R, h, t)
+    (h, t)
 end
 
 Base.show(io::IO, A::KhAlgStructure) = 
