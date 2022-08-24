@@ -1,4 +1,5 @@
-using ..Utils
+using ..Extensions: symbol
+using ..Utils: superscript
 
 abstract type AbstractHomologySummand{R} end
 
@@ -13,14 +14,14 @@ end
 function asString(s::AbstractHomologySummand{R}) :: String where {R}
     iszero(s) && return "⋅"
     
-    symbol = Utils.symbol(R)
+    R_str = symbol(R)
 
     r = rank(s)
-    r_str = r > 1 ? Utils.superscript(r) : ""
+    r_str = r > 1 ? superscript(r) : ""
 
-    res = (r > 0) ? ["$symbol$r_str"] : []
+    res = (r > 0) ? ["$R_str$r_str"] : []
     for t in torsions(s)
-        push!(res, "$symbol/$t")
+        push!(res, "$R_str/$t")
     end
 
     join(res, " ⊕ ")

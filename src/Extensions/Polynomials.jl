@@ -30,3 +30,7 @@ function Base.gcdx(f::T, g::T) :: Tuple{T, T, T} where {T<:Polynomial}
 
     (x, s0, t0)
 end
+
+function symbol(::Type{T}) :: String where {R, X, T<:Polynomial{R, X}}
+    "$(symbol(R))[$X]"
+end
