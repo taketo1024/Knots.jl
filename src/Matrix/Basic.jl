@@ -1,8 +1,5 @@
 using SparseArrays
-using AbstractAlgebra
-using AbstractAlgebra: RingElement, Ring
 using Permutations
-using ..Env
 
 export SparseMatrix, print_matrix
 
@@ -19,7 +16,7 @@ function density(A::SparseMatrix) :: Float64
     N = m * n
 
     if N > 0
-        nz = count(x -> !iszero(x), SparseArrays.findnz(A)[3])
+        nz = count(x -> !iszero(x), findnz(A)[3])
         nz / N
     else 
         0

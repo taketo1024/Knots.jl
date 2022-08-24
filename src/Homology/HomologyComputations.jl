@@ -1,4 +1,4 @@
-using AbstractAlgebra: RingElement, Ring, is_unit
+using AbstractAlgebra: is_unit
 using ..Matrix: SNF, snf
 
 #  Homology computations:
@@ -21,7 +21,7 @@ using ..Matrix: SNF, snf
 #    Hₖ = Ker(dₖ) / Im(dₖ₋₁)
 #       ≅ Rᶠ ⊕ Rᵗ/Im(Sₖ₋₁)
 
-function compute_single(H::AbstractHomology{R, RR}, k::Int) :: AbstractHomologySummand{R, RR} where {R, RR}
+function compute_single(H::AbstractHomology{R}, k::Int) :: AbstractHomologySummand{R} where {R}
     C = complex(H)
     deg = differentialDegree(C)
 
@@ -43,7 +43,7 @@ function compute_single(H::AbstractHomology{R, RR}, k::Int) :: AbstractHomologyS
     makeSummand(H, fₖ, tors)
 end
 
-function compute_incremental(H::AbstractHomology{R, RR}, k::Int; previous=nothing) :: Tuple{AbstractHomologySummand{R, RR}, Any} where {R, RR}
+function compute_incremental(H::AbstractHomology{R}, k::Int; previous=nothing) :: Tuple{AbstractHomologySummand{R}, Any} where {R}
     C = complex(H)
     deg = differentialDegree(C)
     flags = (false, true, false, false) # only need P⁻¹
@@ -82,7 +82,7 @@ function compute_incremental(H::AbstractHomology{R, RR}, k::Int; previous=nothin
     (makeSummand(H, fₖ, tors), Fₖ)
 end
 
-function compute_reverse_incremental(H::AbstractHomology{R, RR}, k::Int; previous=nothing) :: Tuple{AbstractHomologySummand{R, RR}, Any} where {R, RR}
+function compute_reverse_incremental(H::AbstractHomology{R}, k::Int; previous=nothing) :: Tuple{AbstractHomologySummand{R}, Any} where {R}
     C = complex(H)
     deg = differentialDegree(C)
     flags=(false, false, false, true) # only need Q⁻¹

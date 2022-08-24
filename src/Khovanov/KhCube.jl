@@ -1,4 +1,3 @@
-using AbstractAlgebra: RingElement, Ring
 using ..Links: Link, State, Component, resolve, components, crossingNum
 
 # KhCubeVertex
@@ -38,16 +37,16 @@ end
 
 # KhCube
 
-struct KhCube{R<:RingElement, RR<:Ring} 
-    structure::KhAlgStructure{R, RR}
+struct KhCube{R} 
+    structure::KhAlgStructure{R}
     link::Link
     _vertexCache::Dict{State, KhCubeVertex}
     _edgeCache::Dict{Tuple{State, State}, Union{mergeEdge, splitEdge}}
 
-    KhCube(str::KhAlgStructure{R, RR}, l::Link) where {R, RR} = begin
+    KhCube(str::KhAlgStructure{R}, l::Link) where {R} = begin
         vCache = Dict{State, KhCubeVertex}()
         eCache = Dict{Tuple{State, State}, Union{mergeEdge, splitEdge}}()
-        new{R, RR}(str, l, vCache, eCache)
+        new{R}(str, l, vCache, eCache)
     end
 end
 
@@ -130,7 +129,7 @@ function _edge(cube::KhCube, u::State, v::State) :: Union{mergeEdge, splitEdge}
     end
 end
 
-function edgeMap(cube::KhCube{R}, u::State, v::State, x::KhChainGenerator) :: Vector{Tuple{KhChainGenerator, R}} where {R <: RingElement}
+function edgeMap(cube::KhCube{R}, u::State, v::State, x::KhChainGenerator) :: Vector{Tuple{KhChainGenerator, R}} where {R}
     @assert length(u) == length(v) == dim(cube)
     @assert sum(u) + 1 == sum(v)
 
@@ -142,7 +141,7 @@ function edgeMap(cube::KhCube{R}, u::State, v::State, x::KhChainGenerator) :: Ve
     end
 end
 
-function _mergeEdgeMap(cube::KhCube{R}, edg::mergeEdge, v::State, x::KhChainGenerator) :: Vector{Tuple{KhChainGenerator, R}} where {R <: RingElement}
+function _mergeEdgeMap(cube::KhCube{R}, edg::mergeEdge, v::State, x::KhChainGenerator) :: Vector{Tuple{KhChainGenerator, R}} where {R}
     m = product(cube.structure) 
         
     (e, (i, j), k) = (edg.sign, edg.from, edg.to)
@@ -158,7 +157,7 @@ function _mergeEdgeMap(cube::KhCube{R}, edg::mergeEdge, v::State, x::KhChainGene
     end
 end
 
-function _splitEdgeMap(cube::KhCube{R}, edg::splitEdge, v::State, x::KhChainGenerator) :: Vector{Tuple{KhChainGenerator, R}} where {R <: RingElement}
+function _splitEdgeMap(cube::KhCube{R}, edg::splitEdge, v::State, x::KhChainGenerator) :: Vector{Tuple{KhChainGenerator, R}} where {R}
     Δ = coproduct(cube.structure)
 
     (e, i, (j, k)) = (edg.sign, edg.from, edg.to)

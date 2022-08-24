@@ -1,4 +1,3 @@
-using AbstractAlgebra: RingElement
 using SparseArrays: blockdiag
 using Permutations
 

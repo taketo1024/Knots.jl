@@ -6,7 +6,6 @@
 # see also: SpaSM (Sparse direct Solver Modulo p)
 # https://github.com/cbouilla/spasm
 
-using AbstractAlgebra: RingElement, is_unit
 using SparseArrays
 using OrderedCollections
 using Permutations: Permutation
@@ -15,7 +14,7 @@ using ..Utils: ReadWriteLock, read_lock, write_lock
 
 export Pivot, pivot, coordinates, permutations
 
-mutable struct Pivot{R<:RingElement}
+mutable struct Pivot{R}
     size::Tuple{Int, Int}
     entries::Vector{Vector{Int}}   # row -> [col]
     rowHead::Vector{Int}           # row -> col
@@ -25,7 +24,7 @@ mutable struct Pivot{R<:RingElement}
     pivots::OrderedDict{Int, Int}  # col -> row
 end
 
-Pivot(A::SparseMatrix{R}) where {R<:RingElement} = begin
+Pivot(A::SparseMatrix{R}) where {R} = begin
     (m, n) = size(A)
     entries = map( _ -> Int[], 1:m)
     rowHead   = fill(0, m)

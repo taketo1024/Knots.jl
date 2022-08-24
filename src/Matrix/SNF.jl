@@ -7,7 +7,7 @@ export SNF, snf
 
 const Flags4 = Tuple{Bool, Bool, Bool, Bool}
 
-struct SNF{R<:RingElement}
+struct SNF{R}
     factors::Vector{R}
     T::Transform{SparseMatrix{R}}
 end
@@ -28,7 +28,7 @@ function Base.iterate(S::SNF{R}, i = 0) where {R}
     end
 end
 
-function snf(A::SparseMatrix{R}; preprocess=true, flags=(false, false, false, false)) :: SNF{R} where {R<:RingElement}
+function snf(A::SparseMatrix{R}; preprocess=true, flags=(false, false, false, false)) :: SNF{R} where {R}
     d_threshold = 0.75
 
     if iszero(A)
@@ -98,7 +98,7 @@ function _snf_dense(A::SparseMatrix{R}, flags) :: SNF{R} where {R}
     end
 end
 
-function _snf_dense_sorted(A::SparseMatrix{R}, flags) :: SNF{R} where {R<:RingElement}
+function _snf_dense_sorted(A::SparseMatrix{R}, flags) :: SNF{R} where {R}
     (m, n) = size(A)
     r = min(m, n)
 
@@ -119,7 +119,7 @@ function _snf_dense_sorted(A::SparseMatrix{R}, flags) :: SNF{R} where {R<:RingEl
 end
 
 function _to_dense(A::SparseMatrix{R}) :: MatrixElem{R} where {R}
-    baseRing = Env.get_base_ring(R)
+    baseRing = parent(zero(R))
     (m, n) = size(A)
     Aᵈ = AbstractAlgebra.zero_matrix(baseRing, m, n)
     for (i, j, a) in zip(SparseArrays.findnz(A)...)
