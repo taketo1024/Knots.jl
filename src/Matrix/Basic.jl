@@ -3,6 +3,7 @@ using Permutations
 
 export SparseMatrix, print_matrix
 
+const DenseMatrix{R} = Base.Matrix{R}
 const SparseMatrix{R} = SparseArrays.SparseMatrixCSC{R, Int}
 
 function sparse_identity_matrix(R, n::Int) :: SparseMatrix{R}

@@ -1,4 +1,5 @@
-using AbstractAlgebra
+include("ext/SmithNormalForm.jl")
+
 using SparseArrays: blockdiag
 
 export SNF, snf
@@ -102,50 +103,18 @@ function _snf_dense_sorted(A::SparseMatrix{R}, flags) :: SNF{R} where {R}
     (m, n) = size(A)
     r = min(m, n)
 
-    Aᵈ = _to_dense(A)
-    (Sᵈ, Pᵈ, Pinvᵈ, Qᵈ, Qinvᵈ) = snf_x(Aᵈ, flags=flags) # PAQ = S
+    Aᵈ = DenseMatrix{R}(A)
+    (Pinvᵈ, Qinvᵈ, Sᵈ, Pᵈ, Qᵈ) = SmithNormalForm_x.snf(Aᵈ) # PAQ = S
 
     d = filter(!iszero, map( i -> Sᵈ[i, i], 1 : r ))
     isempty(d) && (d = R[])
 
     T = Transform{SparseMatrix{R}}(
-        isnothing(Pᵈ) ?  nothing : _to_sparse(Pᵈ),
-        isnothing(Pinvᵈ) ?  nothing : _to_sparse(Pinvᵈ),
-        isnothing(Qᵈ) ?  nothing : _to_sparse(Qᵈ),
-        isnothing(Qinvᵈ) ?  nothing : _to_sparse(Qinvᵈ)
+        isnothing(Pᵈ) ?  nothing : SparseMatrix{R}(Pᵈ),
+        isnothing(Pinvᵈ) ?  nothing : SparseMatrix{R}(Pinvᵈ),
+        isnothing(Qᵈ) ?  nothing : SparseMatrix{R}(Qᵈ),
+        isnothing(Qinvᵈ) ?  nothing : SparseMatrix{R}(Qinvᵈ)
     )
 
     SNF(d, T)
 end
-
-function _to_dense(A::SparseMatrix{R}) :: MatrixElem{R} where {R}
-    baseRing = parent(zero(R))
-    (m, n) = size(A)
-    Aᵈ = AbstractAlgebra.zero_matrix(baseRing, m, n)
-    for (i, j, a) in zip(SparseArrays.findnz(A)...)
-        Aᵈ[i, j] = a
-    end
-    Aᵈ
-end
-
-function _to_sparse(Aᵈ::MatrixElem{R}) :: SparseMatrix{R} where {R}
-    (m, n) = size(Aᵈ)
-
-    Is = Int[]
-    Js = Int[]
-    Vs = R[]
-
-    ij = (0, 1)
-    while (it = iterate(Aᵈ, ij)) !== nothing
-        (r, ij) = it
-        if !iszero(r) 
-            push!(Is, ij[1])
-            push!(Js, ij[2])
-            push!(Vs, r)
-        end
-    end
-
-    SparseArrays.sparse(Is, Js, Vs, m, n)
-end
-
-
