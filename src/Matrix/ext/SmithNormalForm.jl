@@ -83,20 +83,30 @@ function cswap!(A::AbstractMatrix, j1::Int, j2::Int)
     return A
 end
 
+# Multiply from left: [a b] 
+#                     [c d]
 function rowelimination(A::AbstractMatrix{R}, a::R, b::R, c::R, d::R, i::Int, j::Int) where {R}
     @inbounds for col in eachcol(A)
         t = col[i]
         s = col[j]
+
+        iszero(t) && iszero(s) && continue
+
         col[i] = a * t + b * s
         col[j] = c * t + d * s
     end
     return A
 end
 
+# Multiply from right: [a c] 
+#                      [b d]
 function colelimination(A::AbstractMatrix{R}, a::R, b::R, c::R, d::R, i::Int, j::Int) where {R}
     @inbounds for row in eachrow(A)
         t = row[i]
         s = row[j]
+
+        iszero(t) && iszero(s) && continue
+
         row[i] = a * t + b * s
         row[j] = c * t + d * s
     end
@@ -135,14 +145,22 @@ function rowpivot(
     i, j; inverse=true) where {R}
 
     for k in reverse!(findall(!iszero, view(A, :, j)))
+        i == k && continue
+
+        # sa + tb = d, x = a/d, y = b/d.
+        #
+        # [ s t][a] = [d]
+        # [-y x][b]   [0]
+        #
+        # [ s t]⁻¹ = [x -t]
+        # [-y x]     [y  s]
+
         a = A[i, j]
         b = A[k, j]
 
-        i == k && continue
-
-        s, t, g = bezout(a, b)
-        x = divide(a, g)
-        y = divide(b, g)
+        s, t, d = bezout(a, b)
+        x = divide(a, d)
+        y = divide(b, d)
 
         rowelimination(A, s, t, -y, x, i, k)
         inverse && rowelimination(P, s, t, -y, x, i, k)
@@ -157,14 +175,22 @@ function colpivot(
     i, j; inverse=true) where {R}
 
     for k in reverse!(findall(!iszero, view(A, i, :)))
+        j == k && continue
+
+        # sa + tb = d, x = a/d, y = b/d.
+        #
+        # [a b][s -y] = [d 0]
+        #      [t  x]
+        #
+        # [s -y]⁻¹ = [ x  y]
+        # [t  x]     [-t  s]
+
         a = A[i, j]
         b = A[i, k]
 
-        j == k && continue
-
-        s, t, g = bezout(a, b)
-        x = divide(a, g)
-        y = divide(b, g)
+        s, t, d = bezout(a, b)
+        x = divide(a, d)
+        y = divide(b, d)
 
         colelimination(A, s, t, -y, x, j, k)
         inverse && colelimination(Q, s, t, -y, x, j, k)
