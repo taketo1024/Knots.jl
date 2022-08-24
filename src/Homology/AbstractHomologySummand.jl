@@ -1,11 +1,7 @@
-using AbstractAlgebra: RingElement, Ring
-using ..Utils
+using ..Extensions: symbol
+using ..Utils: superscript
 
-abstract type AbstractHomologySummand{R<:RingElement, RR<:Ring} end
-
-function baseRing(s::AbstractHomologySummand{R, RR}) :: RR where {R, RR <: Ring}
-    throw(MethodError(AbstractHomologySummand, (s,)))
-end
+abstract type AbstractHomologySummand{R} end
 
 function rank(s::AbstractHomologySummand) :: Int
     throw(MethodError(rank, (s,)))
@@ -15,18 +11,17 @@ function torsions(s::AbstractHomologySummand{R}) :: Vector{R} where {R}
     throw(MethodError(torsions, (s,)))
 end
 
-function asString(s::AbstractHomologySummand) :: String
+function asString(s::AbstractHomologySummand{R}) :: String where {R}
     iszero(s) && return "⋅"
     
-    R = baseRing(s)
-    symbol = Utils.symbol(R)
+    R_str = symbol(R)
 
     r = rank(s)
-    r_str = r > 1 ? Utils.superscript(r) : ""
+    r_str = r > 1 ? superscript(r) : ""
 
-    res = (r > 0) ? ["$symbol$r_str"] : []
+    res = (r > 0) ? ["$R_str$r_str"] : []
     for t in torsions(s)
-        push!(res, "$symbol/$t")
+        push!(res, "$R_str/$t")
     end
 
     join(res, " ⊕ ")

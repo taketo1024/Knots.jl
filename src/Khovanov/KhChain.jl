@@ -1,4 +1,3 @@
-using AbstractAlgebra
 using ..Links: State
 
 # KhEnhancedState
@@ -22,7 +21,7 @@ end
 # KhChain
 # elements of Cube(D) and CKh(D)
 
-mutable struct KhChain{R <: RingElement}
+mutable struct KhChain{R}
     elements::Dict{KhChainGenerator,R}
 end
 
@@ -47,7 +46,7 @@ function simplify!(ch::KhChain)
     ch
 end
 
-Base.zero(::Type{KhChain{R}}) where {R <: RingElement} = 
+Base.zero(::Type{KhChain{R}}) where {R} = 
     KhChain(Dict{KhChainGenerator, R}())
 
 Base.length(ch::KhChain) =
@@ -65,7 +64,7 @@ Base.values(ch::KhChain) =
 Base.getindex(ch::KhChain, k::KhChainGenerator) = 
     getindex(ch.elements, k)
 
-Base.setindex!(ch::KhChain{R}, c::R, k::KhChainGenerator) where {R <: RingElement} = 
+Base.setindex!(ch::KhChain{R}, c::R, k::KhChainGenerator) where {R} = 
     setindex!(ch.elements, c, k)
 
 Base.iterate(ch::KhChain, state...) = begin
@@ -77,21 +76,21 @@ end
 Base.show(io::IO, ch::KhChain) = 
     print(io, asString(ch))
 
-Base.:(+)(c1::KhChain{R}, c2::KhChain{R}) where {R <: RingElement} = 
+Base.:(+)(c1::KhChain{R}, c2::KhChain{R}) where {R} = 
     KhChain(mergewith(+, c1.elements, c2.elements))
 
 Base.:(-)(c::KhChain) = 
     mapCoeffs(-, c)
 
-Base.:(-)(c1::KhChain{R}, c2::KhChain{R}) where {R <: RingElement} = 
+Base.:(-)(c1::KhChain{R}, c2::KhChain{R}) where {R} = 
     c1 + (-c2)
 
-Base.:(*)(r::R, c::KhChain{R}) where {R <: RingElement} = 
+Base.:(*)(r::R, c::KhChain{R}) where {R} = 
     mapCoeffs( v -> r * v, c )
 
-Base.:(*)(c::KhChain{R}, r::R) where {R <: RingElement} = 
+Base.:(*)(c::KhChain{R}, r::R) where {R} = 
     mapCoeffs( v -> v * r, c )
 
-Base.:(==)(c1::KhChain{R}, c2::KhChain{R}) where {R <: RingElement} = 
+Base.:(==)(c1::KhChain{R}, c2::KhChain{R}) where {R} = 
     c1.elements == c2.elements
     

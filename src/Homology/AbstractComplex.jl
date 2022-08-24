@@ -1,10 +1,4 @@
-using AbstractAlgebra: RingElement, Ring
-
-abstract type AbstractComplex{R<:RingElement, RR<:Ring} end
-
-function baseRing(C::AbstractComplex{R, RR}) :: RR where {R, RR <: Ring}
-    throw(MethodError(baseRomg, (C,)))
-end
+abstract type AbstractComplex{R} end
 
 function hDegRange(C::AbstractComplex) :: UnitRange{Int}
     throw(MethodError(hDegRange, (C,)))
@@ -18,6 +12,6 @@ function differentialDegree(C::AbstractComplex) :: Int
     +1
 end
 
-function differential(C::AbstractComplex{R}, k::Int) :: AbstractMatrix{R} where {R<:RingElement}
+function differential(C::AbstractComplex{R}, k::Int) :: AbstractMatrix{R} where {R}
     throw(MethodError(differential, (C, k)))
 end
