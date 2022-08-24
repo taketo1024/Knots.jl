@@ -315,19 +315,39 @@ function _snf_step2(
 
     # Make sure that d_i is divisible be d_{i+1}.
     r = minimum(size(A))
-    pass = true
-    while pass
-        pass = false
+    
+    while true
+        done = true
         for i in 1:r-1
-            divisable(A[i+1, i+1], A[i, i]) && continue
-            pass = true
-            A[i+1, i] = A[i+1, i+1]
+            a = A[i, i]
+            b = A[i + 1, i + 1]
 
-            colelimination(Q, one(R), one(R), zero(R), one(R), i, i + 1)
-            rowelimination(Qinv, one(R), zero(R), -one(R), one(R), i, i + 1)
+            divisable(b, a) && continue
 
-            smithpivot(A, P, Pinv, Q, Qinv, i, i, inverse=inverse)
+            # sa + tb = d, x = a/d, y = b/d.
+            #
+            # [1   1 ][a   ][s  -y] = [d      ]
+            # [-ty sx][   b][t  x ]   [   ab/d]
+
+            (s, t, d) = bezout(a, b)
+
+            x = divide(a, d)
+            y = divide(b, d)
+            sx = s * x
+            ty = t * y
+
+            A[i, i] = d
+            A[i + 1, i + 1] = divide(a * b, d)
+
+            inverse && rowelimination(P, one(R), one(R), -ty, sx, i, i + 1)
+            colelimination(Pinv, sx, ty, -one(R), one(R), i, i + 1)
+
+            inverse && colelimination(Q, s, t, -y, x, i, i + 1)
+            rowelimination(Qinv, x, y, -t, s, i, i + 1)
+
+            done = false
         end
+        done && break
     end
 end
 
