@@ -105,6 +105,31 @@ function colelimination(D::AbstractMatrix{R}, a::R, b::R, c::R, d::R, i::Int, j:
     return D
 end
 
+function select_pivot(D::AbstractMatrix{R}, t::Int, j::Int) :: Int where {R}
+    # Good pivot row for j-th column is the one
+    # that have a smallest number of elements
+    rows = size(D)[1]
+    prow = 0
+    rsize = typemax(Int)
+    for i in t:rows
+        iszero(D[i, j]) && continue
+        c = count(!iszero, view(D, i, :))
+        if c < rsize
+            rsize = c
+            prow = i
+        end
+    end
+    (prow > 0) ? prow : error()
+end
+
+function rmul(X::AbstractMatrix{R}, i::Int, a::R) where {R}
+    @views X[i, :] .*= a
+end
+
+function cmul(X::AbstractMatrix{R}, j::Int, a::R) where {R}
+    @views X[:, j] .*= a
+end
+
 function rowpivot(U::AbstractMatrix{R},
     Uinv::AbstractMatrix{R},
     D::AbstractMatrix{R},
@@ -207,7 +232,7 @@ function _snf_step1(U::AbstractMatrix{R},
     Vinv::AbstractMatrix{R}
     ; inverse=true) where {R}
 
-    rows, cols = size(D)
+    cols = size(D)[2]
     t = 1
 
     for j in 1:cols
@@ -215,31 +240,30 @@ function _snf_step1(U::AbstractMatrix{R},
 
         rcountnz(D, j) == 0 && continue
 
-        # Good pivot row for j-th column is the one
-        # that have a smallest number of elements
-        prow = 1
-        rsize = typemax(Int)
-        for i in t:rows
-            if D[i, j] != zero(R)
-                c = count(!iszero, view(D, i, :))
-                if c < rsize
-                    rsize = c
-                    prow = i
-                end
-            end
-        end
+        prow = select_pivot(D, t, j)
 
         @debug "Pivot Row selected: t = $t, pivot = $prow" D = formatmtx(D)
+
+        # swap rows
         rswap!(D, t, prow)
         inverse && rswap!(Uinv, t, prow)
         cswap!(U, t, prow)
 
-        @debug "Performing the pivot step at (t=$t, j=$j)" D = formatmtx(D)
-        smithpivot(U, Uinv, V, Vinv, D, t, j, inverse=inverse)
-
+        # swap cols
         cswap!(D, t, j)
         inverse && cswap!(Vinv, t, j)
         rswap!(V, t, j)
+
+        # normalize
+        (u, uinv) = normalizing_unit(D[t, t])
+        if !isone(u)
+            cmul(D, t, u)
+            rmul(V, t, uinv)
+            inverse && cmul(Vinv, t, u)
+        end
+
+        @debug "Performing the pivot step at (i=$t, j=$t)" D = formatmtx(D)
+        smithpivot(U, Uinv, V, Vinv, D, t, t, inverse=inverse)
 
         t += 1
 
@@ -290,13 +314,11 @@ function _snf_step3(U::AbstractMatrix{R},
         d = D[j, j]
 
         (u, uinv) = normalizing_unit(d)
-        isone(u) && return
+        isone(u) && continue
 
-        @views V[j, :] .*= uinv
-        if inverse
-            @views Vinv[:, j] .*= u
-        end
         D[j, j] *= u
+        rmul(V, j, uinv)
+        inverse && cmul(Vinv, j, u)
     end
     @logmsg (Base.CoreLogging.Debug - 1) "Factorization" D = formatmtx(D) U = formatmtx(U) V = formatmtx(V) U⁻¹ = formatmtx(Uinv) V⁻¹ = formatmtx(Vinv)
 
