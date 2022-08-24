@@ -9,13 +9,13 @@ using Base.CoreLogging
 using ...Extensions: isunit, normalizing_unit
 
 function snf(A::AbstractMatrix{R}; inverse=true) where {R}
-    (Pinv, Qinv, B, P, Q) = init(A, inverse=inverse)
+    (B, P, Pinv, Q, Qinv) = init(A, inverse=inverse)
 
-    _snf_step1(Pinv, Qinv, B, P, Q; inverse=inverse)
-    _snf_step2(Pinv, Qinv, B, P, Q; inverse=inverse)
-    _snf_step3(Pinv, Qinv, B, P, Q; inverse=inverse)
+    _snf_step1(B, P, Pinv, Q, Qinv; inverse=inverse)
+    _snf_step2(B, P, Pinv, Q, Qinv; inverse=inverse)
+    _snf_step3(B, P, Pinv, Q, Qinv; inverse=inverse)
 
-    (Pinv, Qinv, B, P, Q)
+    (B, P, Pinv, Q, Qinv)
 end
 
 function bezout(a::R, b::R) where {R}
@@ -129,9 +129,9 @@ function cmul(A::AbstractMatrix{R}, j::Int, a::R) where {R}
 end
 
 function rowpivot(
-    Pinv::AbstractMatrix{R},
-    P::AbstractMatrix{R},
     A::AbstractMatrix{R},
+    P::AbstractMatrix{R},
+    Pinv::AbstractMatrix{R},
     i, j; inverse=true) where {R}
 
     for k in reverse!(findall(!iszero, view(A, :, j)))
@@ -151,9 +151,9 @@ function rowpivot(
 end
 
 function colpivot(
-    Qinv::AbstractMatrix{R},
-    Q::AbstractMatrix{R},
     A::AbstractMatrix{R},
+    Q::AbstractMatrix{R},
+    Qinv::AbstractMatrix{R},
     i, j; inverse=true) where {R}
 
     for k in reverse!(findall(!iszero, view(A, i, :)))
@@ -173,18 +173,18 @@ function colpivot(
 end
 
 function smithpivot(
-    Pinv::AbstractMatrix{R},
-    P::AbstractMatrix{R},
-    Qinv::AbstractMatrix{R},
-    Q::AbstractMatrix{R},
     A::AbstractMatrix{R},
+    P::AbstractMatrix{R},
+    Pinv::AbstractMatrix{R},
+    Q::AbstractMatrix{R},
+    Qinv::AbstractMatrix{R},
     i, j; inverse=true) where {R}
 
     pivot = A[i, j]
     @assert pivot != zero(R) "Pivot cannot be zero"
     while ccountnz(A, i) > 1 || rcountnz(A, j) > 1
-        colpivot(Qinv, Q, A, i, j, inverse=inverse)
-        rowpivot(Pinv, P, A, i, j, inverse=inverse)
+        colpivot(A, Q, Qinv, i, j, inverse=inverse)
+        rowpivot(A, P, Pinv, i, j, inverse=inverse)
     end
 end
 
@@ -204,7 +204,7 @@ function init(A::AbstractSparseMatrix{R,Ti}; inverse=true) where {R,Ti}
     end
     Q = inverse ? copy(Qinv) : spzeros(R, 0, 0)
 
-    return Pinv, Qinv, B, P, Q
+    return B, P, Pinv, Q, Qinv
 end
 
 function init(A::AbstractMatrix{R}; inverse=true) where {R}
@@ -223,18 +223,18 @@ function init(A::AbstractMatrix{R}; inverse=true) where {R}
     end
     Q = inverse ? copy(Qinv) : zeros(R, 0, 0)
 
-    return Pinv, Qinv, B, P, Q
+    return B, P, Pinv, Q, Qinv
 end
 
 formatmtx(M) = size(M, 1) == 0 ? "[]" : repr(collect(M); context=IOContext(stdout, :compact => true))
 
 function _snf_step1(
-    Pinv::AbstractMatrix{R},
-    Qinv::AbstractMatrix{R},
     A::AbstractMatrix{R},
     P::AbstractMatrix{R},
-    Q::AbstractMatrix{R}
-    ; inverse=true) where {R}
+    Pinv::AbstractMatrix{R},
+    Q::AbstractMatrix{R},
+    Qinv::AbstractMatrix{R}; 
+    inverse=true) where {R}
 
     cols = size(A)[2]
     t = 1
@@ -267,7 +267,7 @@ function _snf_step1(
         end
 
         # @debug "Performing the pivot step at (i=$t, j=$t)" D = formatmtx(D)
-        smithpivot(Pinv, P, Qinv, Q, A, t, t, inverse=inverse)
+        smithpivot(A, P, Pinv, Q, Qinv, t, t, inverse=inverse)
 
         if issparse(A)
             dropzeros!(A)
@@ -280,12 +280,12 @@ function _snf_step1(
 end
 
 function _snf_step2(
-    Pinv::AbstractMatrix{R},
-    Qinv::AbstractMatrix{R},
     A::AbstractMatrix{R},
     P::AbstractMatrix{R},
-    Q::AbstractMatrix{R}
-    ; inverse=true) where {R}
+    Pinv::AbstractMatrix{R},
+    Q::AbstractMatrix{R},
+    Qinv::AbstractMatrix{R}; 
+    inverse=true) where {R}
 
     # Make sure that d_i is divisible be d_{i+1}.
     r = minimum(size(A))
@@ -300,18 +300,18 @@ function _snf_step2(
             colelimination(Q, one(R), one(R), zero(R), one(R), i, i + 1)
             rowelimination(Qinv, one(R), zero(R), -one(R), one(R), i, i + 1)
 
-            smithpivot(Pinv, P, Qinv, Q, A, i, i, inverse=inverse)
+            smithpivot(A, P, Pinv, Q, Qinv, i, i, inverse=inverse)
         end
     end
 end
 
 function _snf_step3(
-    Pinv::AbstractMatrix{R},
-    Qinv::AbstractMatrix{R},
     A::AbstractMatrix{R},
     P::AbstractMatrix{R},
-    Q::AbstractMatrix{R}
-    ; inverse=true) where {R}
+    Pinv::AbstractMatrix{R},
+    Q::AbstractMatrix{R},
+    Qinv::AbstractMatrix{R}; 
+    inverse=true) where {R}
 
     rows, cols = size(A)
 
@@ -333,9 +333,11 @@ function _snf_step3(
     # @logmsg (Base.CoreLogging.Debug - 1) "Factorization" D = formatmtx(D) U = formatmtx(U) V = formatmtx(V) U⁻¹ = formatmtx(Uinv) V⁻¹ = formatmtx(Vinv)
 
     if issparse(A)
-        return dropzeros!(Pinv), dropzeros!(Qinv), dropzeros!(A), dropzeros!(P), dropzeros!(Q)
-    else
-        return Pinv, Qinv, A, P, Q
+        dropzeros!(A)
+        dropzeros!(P)
+        dropzeros!(Pinv)
+        dropzeros!(Q)
+        dropzeros!(Qinv)
     end
 end
 
