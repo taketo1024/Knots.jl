@@ -8,12 +8,12 @@ using SparseArrays
 using Base.CoreLogging
 using ...Extensions: isunit, normalizing_unit
 
-function snf(A::AbstractMatrix{R}; inverse=true) where {R}
-    (B, P, Pinv, Q, Qinv) = init(A, inverse=inverse)
+function snf(A::AbstractMatrix{R}; flags=(true, true, true, true)) where {R}
+    (B, P, Pinv, Q, Qinv) = init(A)
 
-    _snf_step1(B, P, Pinv, Q, Qinv; inverse=inverse)
-    _snf_step2(B, P, Pinv, Q, Qinv; inverse=inverse)
-    _snf_step3(B, P, Pinv, Q, Qinv; inverse=inverse)
+    _snf_step1(B, P, Pinv, Q, Qinv; flags=flags)
+    _snf_step2(B, P, Pinv, Q, Qinv; flags=flags)
+    _snf_step3(B, P, Pinv, Q, Qinv; flags=flags)
 
     (B, P, Pinv, Q, Qinv)
 end
@@ -142,7 +142,7 @@ function rowpivot(
     A::AbstractMatrix{R},
     P::AbstractMatrix{R},
     Pinv::AbstractMatrix{R},
-    i, j; inverse=true) where {R}
+    i, j; flags) where {R}
 
     for k in reverse!(findall(!iszero, view(A, :, j)))
         i == k && continue
@@ -163,8 +163,8 @@ function rowpivot(
         y = divide(b, d)
 
         rowelimination(A, s, t, -y, x, i, k)
-        inverse && rowelimination(P, s, t, -y, x, i, k)
-        colelimination(Pinv, x, y, -t, s, i, k)
+        flags[1] && rowelimination(P, s, t, -y, x, i, k)
+        flags[2] && colelimination(Pinv, x, y, -t, s, i, k)
     end
 end
 
@@ -172,7 +172,7 @@ function colpivot(
     A::AbstractMatrix{R},
     Q::AbstractMatrix{R},
     Qinv::AbstractMatrix{R},
-    i, j; inverse=true) where {R}
+    i, j; flags) where {R}
 
     for k in reverse!(findall(!iszero, view(A, i, :)))
         j == k && continue
@@ -193,8 +193,8 @@ function colpivot(
         y = divide(b, d)
 
         colelimination(A, s, t, -y, x, j, k)
-        inverse && colelimination(Q, s, t, -y, x, j, k)
-        rowelimination(Qinv, x, y, -t, s, j, k)
+        flags[3] && colelimination(Q, s, t, -y, x, j, k)
+        flags[4] && rowelimination(Qinv, x, y, -t, s, j, k)
     end
 end
 
@@ -204,50 +204,50 @@ function smithpivot(
     Pinv::AbstractMatrix{R},
     Q::AbstractMatrix{R},
     Qinv::AbstractMatrix{R},
-    i, j; inverse=true) where {R}
+    i, j; flags) where {R}
 
     pivot = A[i, j]
     @assert pivot != zero(R) "Pivot cannot be zero"
     while ccountnz(A, i) > 1 || rcountnz(A, j) > 1
-        colpivot(A, Q, Qinv, i, j, inverse=inverse)
-        rowpivot(A, P, Pinv, i, j, inverse=inverse)
+        colpivot(A, Q, Qinv, i, j, flags=flags)
+        rowpivot(A, P, Pinv, i, j, flags=flags)
     end
 end
 
-function init(A::AbstractSparseMatrix{R,Ti}; inverse=true) where {R,Ti}
+function init(A::AbstractSparseMatrix{R,Ti}) where {R,Ti}
     B = copy(A)
     rows, cols = size(A)
 
-    Pinv = spzeros(R, rows, rows)
+    P = spzeros(R, rows, rows)
     for i in 1:rows
-        Pinv[i, i] = one(R)
+        P[i, i] = one(R)
     end
-    P = inverse ? copy(Pinv) : spzeros(R, 0, 0)
+    Pinv = copy(P)
 
-    Qinv = spzeros(R, cols, cols)
+    Q = spzeros(R, cols, cols)
     for i in 1:cols
-        Qinv[i, i] = one(R)
+        Q[i, i] = one(R)
     end
-    Q = inverse ? copy(Qinv) : spzeros(R, 0, 0)
+    Qinv = copy(Q)
 
     return B, P, Pinv, Q, Qinv
 end
 
-function init(A::AbstractMatrix{R}; inverse=true) where {R}
+function init(A::AbstractMatrix{R}) where {R}
     B = copy(A)
     rows, cols = size(A)
 
-    Pinv = zeros(R, rows, rows)
+    P = zeros(R, rows, rows)
     for i in 1:rows
-        Pinv[i, i] = one(R)
+        P[i, i] = one(R)
     end
-    P = inverse ? copy(Pinv) : zeros(R, 0, 0)
+    Pinv = copy(P)
 
-    Qinv = zeros(R, cols, cols)
+    Q = zeros(R, cols, cols)
     for i in 1:cols
-        Qinv[i, i] = one(R)
+        Q[i, i] = one(R)
     end
-    Q = inverse ? copy(Qinv) : zeros(R, 0, 0)
+    Qinv = copy(Q)
 
     return B, P, Pinv, Q, Qinv
 end
@@ -260,7 +260,7 @@ function _snf_step1(
     Pinv::AbstractMatrix{R},
     Q::AbstractMatrix{R},
     Qinv::AbstractMatrix{R}; 
-    inverse=true) where {R}
+    flags) where {R}
 
     cols = size(A)[2]
     t = 1
@@ -276,24 +276,24 @@ function _snf_step1(
 
         # swap rows
         rswap!(A, t, prow)
-        inverse && rswap!(P, t, prow)
-        cswap!(Pinv, t, prow)
+        flags[1] && rswap!(P, t, prow)
+        flags[2] && cswap!(Pinv, t, prow)
 
         # swap cols
         cswap!(A, t, j)
-        inverse && cswap!(Q, t, j)
-        rswap!(Qinv, t, j)
+        flags[3] && cswap!(Q, t, j)
+        flags[4] && rswap!(Qinv, t, j)
 
         # normalize
         (u, uinv) = normalizing_unit(A[t, t])
         if !isone(u)
             cmul(A, t, u)
-            rmul(Qinv, t, uinv)
-            inverse && cmul(Q, t, u)
+            flags[3] && cmul(Q, t, u)
+            flags[4] && rmul(Qinv, t, uinv)
         end
 
         # @debug "Performing the pivot step at (i=$t, j=$t)" D = formatmtx(D)
-        smithpivot(A, P, Pinv, Q, Qinv, t, t, inverse=inverse)
+        smithpivot(A, P, Pinv, Q, Qinv, t, t, flags=flags)
 
         if issparse(A)
             dropzeros!(A)
@@ -311,7 +311,7 @@ function _snf_step2(
     Pinv::AbstractMatrix{R},
     Q::AbstractMatrix{R},
     Qinv::AbstractMatrix{R}; 
-    inverse=true) where {R}
+    flags) where {R}
 
     # Make sure that d_i is divisible be d_{i+1}.
     r = minimum(size(A))
@@ -339,11 +339,10 @@ function _snf_step2(
             A[i, i] = d
             A[i + 1, i + 1] = divide(a * b, d)
 
-            inverse && rowelimination(P, one(R), one(R), -ty, sx, i, i + 1)
-            colelimination(Pinv, sx, ty, -one(R), one(R), i, i + 1)
-
-            inverse && colelimination(Q, s, t, -y, x, i, i + 1)
-            rowelimination(Qinv, x, y, -t, s, i, i + 1)
+            flags[1] && rowelimination(P, one(R), one(R), -ty, sx, i, i + 1)
+            flags[2] && colelimination(Pinv, sx, ty, -one(R), one(R), i, i + 1)
+            flags[3] && colelimination(Q, s, t, -y, x, i, i + 1)
+            flags[4] && rowelimination(Qinv, x, y, -t, s, i, i + 1)
 
             done = false
         end
@@ -357,7 +356,7 @@ function _snf_step3(
     Pinv::AbstractMatrix{R},
     Q::AbstractMatrix{R},
     Qinv::AbstractMatrix{R}; 
-    inverse=true) where {R}
+    flags) where {R}
 
     rows, cols = size(A)
 
@@ -373,8 +372,8 @@ function _snf_step3(
         isone(u) && continue
 
         A[j, j] *= u
-        rmul(Qinv, j, uinv)
-        inverse && cmul(Q, j, u)
+        flags[3] && cmul(Q, j, u)
+        flags[4] && rmul(Qinv, j, uinv)
     end
     # @logmsg (Base.CoreLogging.Debug - 1) "Factorization" D = formatmtx(D) U = formatmtx(U) V = formatmtx(V) U⁻¹ = formatmtx(Uinv) V⁻¹ = formatmtx(Vinv)
 

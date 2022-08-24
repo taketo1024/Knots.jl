@@ -63,7 +63,7 @@ function _snf_sparse(A::SparseMatrix{R}, flags::Flags4) :: SNF{R} where {R}
     @debug "snf-sparse A: $(size(A)), density: $(density(A))"
 
     r = min(size(A)...)
-    (S, P, Pinv, Q, Qinv) = SmithNormalForm_x.snf(A)
+    (S, P, Pinv, Q, Qinv) = SmithNormalForm_x.snf(A; flags=flags)
 
     d = filter(!iszero, map( i -> S[i, i], 1 : r ))
     isempty(d) && (d = R[])
@@ -110,7 +110,7 @@ function _snf_dense_sorted(A::SparseMatrix{R}, flags::Flags4) :: SNF{R} where {R
     r = min(m, n)
 
     Aᵈ = DenseMatrix{R}(A)
-    (Sᵈ, Pᵈ, Pinvᵈ, Qᵈ, Qinvᵈ) = SmithNormalForm_x.snf(Aᵈ) # PAQ = S
+    (Sᵈ, Pᵈ, Pinvᵈ, Qᵈ, Qinvᵈ) = SmithNormalForm_x.snf(Aᵈ; flags=flags) # PAQ = S
 
     d = filter(!iszero, map( i -> Sᵈ[i, i], 1 : r ))
     isempty(d) && (d = R[])
