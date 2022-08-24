@@ -22,6 +22,15 @@ end
 
 function bezout(a::R, b::R) where {R}
     (g, s, t) = gcdx(a, b)
+
+    if g == a
+        s = one(R)
+        t = zero(R)
+    elseif g == -a
+        s = -one(R)
+        t = zero(R)
+    end
+    
     (s, t, g)
 end
 
@@ -206,20 +215,16 @@ function _snf_step1(U::AbstractMatrix{R},
 
         rcountnz(D, j) == 0 && continue
 
+        # Good pivot row for j-th column is the one
+        # that have a smallest number of elements
         prow = 1
-        if D[t, t] != zero(R)
-            prow = t
-        else
-            # Good pivot row for j-th column is the one
-            # that have a smallest number of elements
-            rsize = typemax(R)
-            for i in 1:rows
-                if D[i, j] != zero(R)
-                    c = count(!iszero, view(D, i, :))
-                    if c < rsize
-                        rsize = c
-                        prow = i
-                    end
+        rsize = typemax(Int)
+        for i in t:rows
+            if D[i, j] != zero(R)
+                c = count(!iszero, view(D, i, :))
+                if c < rsize
+                    rsize = c
+                    prow = i
                 end
             end
         end
