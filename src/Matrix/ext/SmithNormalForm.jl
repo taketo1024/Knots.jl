@@ -19,30 +19,21 @@ function snf(A::AbstractMatrix{R}; flags=(true, true, true, true)) where {R}
 end
 
 function bezout(a::R, b::R) where {R}
-    (g, s, t) = gcdx(a, b)
+    (d, s, t) = gcdx(a, b) # d = sa + tb
 
-    if g == a
-        s = one(R)
-        t = zero(R)
-    elseif g == -a
-        s = -one(R)
-        t = zero(R)
+    e = normalizing_unit(d)[1]
+    if !isone(e)
+        d *= e
+        s *= e
+        t *= e
     end
-    
-    (s, t, g)
+
+    u = div(a, d)
+    isunit(u) ? (d, u, zero(R)) : (d, s, t)
 end
 
-function divisable(a::R, b::R) where {R}
-    b == zero(R) && return a == zero(R)
-    return iszero(a % b)
-end
-
-function divide(a::R, b::R) where {R}
-    if b != -one(R)
-        return div(a, b)
-    else
-        return a * b
-    end
+function divisible(a::R, b::R) where {R}
+    iszero(b) ? iszero(a) : iszero(a % b)
 end
 
 function rcountnz(A::AbstractMatrix{R}, j::Int) where {R}
@@ -158,9 +149,9 @@ function rowpivot(
         a = A[i, j]
         b = A[k, j]
 
-        s, t, d = bezout(a, b)
-        x = divide(a, d)
-        y = divide(b, d)
+        d, s, t = bezout(a, b)
+        x = div(a, d)
+        y = div(b, d)
 
         rowelimination(A, s, t, -y, x, i, k)
         flags[1] && rowelimination(P, s, t, -y, x, i, k)
@@ -188,9 +179,9 @@ function colpivot(
         a = A[i, j]
         b = A[i, k]
 
-        s, t, d = bezout(a, b)
-        x = divide(a, d)
-        y = divide(b, d)
+        d, s, t = bezout(a, b)
+        x = div(a, d)
+        y = div(b, d)
 
         colelimination(A, s, t, -y, x, j, k)
         flags[3] && colelimination(Q, s, t, -y, x, j, k)
@@ -208,9 +199,14 @@ function smithpivot(
 
     pivot = A[i, j]
     @assert pivot != zero(R) "Pivot cannot be zero"
+
     while ccountnz(A, i) > 1 || rcountnz(A, j) > 1
         colpivot(A, Q, Qinv, i, j, flags=flags)
         rowpivot(A, P, Pinv, i, j, flags=flags)
+
+        if pivot == A[i, j] && (ccountnz(A, i) > 1 || rcountnz(A, j) > 1)
+            error("Detect endless process! pivot = ($i, $j), $(A[i, j])")
+        end
     end
 end
 
@@ -322,22 +318,22 @@ function _snf_step2(
             a = A[i, i]
             b = A[i + 1, i + 1]
 
-            divisable(b, a) && continue
+            divisible(b, a) && continue
 
             # sa + tb = d, x = a/d, y = b/d.
             #
             # [1   1 ][a   ][s  -y] = [d      ]
             # [-ty sx][   b][t  x ]   [   ab/d]
 
-            (s, t, d) = bezout(a, b)
+            (d, s, t) = bezout(a, b)
 
-            x = divide(a, d)
-            y = divide(b, d)
+            x = div(a, d)
+            y = div(b, d)
             sx = s * x
             ty = t * y
 
             A[i, i] = d
-            A[i + 1, i + 1] = divide(a * b, d)
+            A[i + 1, i + 1] = x * b
 
             flags[1] && rowelimination(P, one(R), one(R), -ty, sx, i, i + 1)
             flags[2] && colelimination(Pinv, sx, ty, -one(R), one(R), i, i + 1)
