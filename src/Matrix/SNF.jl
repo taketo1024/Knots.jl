@@ -27,41 +27,71 @@ function Base.iterate(S::SNF{R}, i = 0) where {R}
     end
 end
 
+function snf_zero(A::SparseMatrix{R}) :: SNF{R} where {R}
+    SNF(R[], identity_transform(SparseMatrix{R}, size(A)))
+end
+
 function snf(A::SparseMatrix{R}; preprocess=true, flags::Flags4=(true, true, true, true)) :: SNF{R} where {R}
     @debug "snf A: $(size(A)), density: $(density(A))"
     d_threshold = 0.5
 
     if iszero(A)
-        SNF(R[], identity_transform(SparseMatrix{R}, size(A)))
+        snf_zero(A)
     elseif preprocess
-        _snf_preprocess(A, flags)
+        snf_preprocess(A; flags=flags)
     elseif density(A) < d_threshold
-        _snf_sparse(A, flags)
+        snf_sparse(A; flags=flags)
     else
-        _snf_dense(A, flags)
+        snf_dense(A; flags=flags)
     end
 end
 
-function _snf_preprocess(A::SparseMatrix{R}, flags::Flags4) :: SNF{R} where {R}
+function snf_preprocess(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where {R}
     @debug "snf-preprocess A: $(size(A)), density: $(density(A))"
+
+    (F, S) = snf_iterate_pivots(A; flags=flags)
+    
+    if !iszero(S)
+        F₂ = snf(S; preprocess=false, flags=flags)
+        snf_compose(F, F₂)
+    else
+        F
+    end
+end
+
+function snf_iterate_pivots(A::SparseMatrix{R}; flags::Flags4, itr=1) :: Tuple{SNF{R}, SparseMatrix{R}, Permutation, Permutation} where {R}
+    @debug "snf-pivots (step: $itr) A: $(size(A)), density: $(density(A))"
+
+    if iszero(A)
+        return (snf_zero(A), A)
+    end
 
     piv = pivot(A)
     r = npivots(piv)
+    (p, q) = permutations(piv)
 
-    r == 0 && return snf(A; preprocess=false, flags=flags)
+    if r == 0 
+        return (snf_zero(A), A, p, q)
+    end
 
     (S, T) = schur_complement(A, piv; flags=flags)
 
-    if min(size(S)...) > 0 
-        next = snf(S; flags=flags)
-        _snf_compose(r, T, next)
-    else
-        d = fill(one(R), r)
-        SNF(d, T)
+    d = fill(one(R), r)
+    F = SNF(d, T)
+
+    if !iszero(S)
+        (F₂, S₂, p₂, q₂) = snf_iterate_pivots(S; flags=flags, itr=itr+1)
+
+        F = snf_compose(F, F₂)
+        S = S₂
+        p = p * shift(p₂, r)
+        q = q * shift(q₂, r)
     end
+    
+    (F, S, p, q)
 end
 
-function _snf_sparse(A::SparseMatrix{R}, flags::Flags4) :: SNF{R} where {R}
+function snf_sparse(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where {R}
     @debug "snf-sparse A: $(size(A)), density: $(density(A))"
 
     r = min(size(A)...)
@@ -75,7 +105,7 @@ function _snf_sparse(A::SparseMatrix{R}, flags::Flags4) :: SNF{R} where {R}
     SNF(d, T)
 end
 
-function _snf_dense(A::SparseMatrix{R}, flags::Flags4) :: SNF{R} where {R}
+function snf_dense(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where {R}
     @debug "snf-dense A: $(size(A)), density: $(density(A))"
     I(k) = sparse_identity_matrix(R, k)
     (m, n) = size(A)
@@ -91,13 +121,13 @@ function _snf_dense(A::SparseMatrix{R}, flags::Flags4) :: SNF{R} where {R}
     (k, l) = (length(rows), length(cols))
 
     if (k, l) == (m, n)
-        _snf_dense_sorted(A, flags)
+        _snf_dense_sorted(A; flags=flags)
     else
         p = permutation(collect(rows), m)
         q = permutation(collect(cols), n)
         B = permute(A, p, q)[1:k, 1:l]
 
-        F = _snf_dense_sorted(B, flags)
+        F = _snf_dense_sorted(B; flags=flags)
 
         d = F.factors
         I = identity_transform(SparseMatrix{R}, (m - k, n - l))
@@ -107,7 +137,7 @@ function _snf_dense(A::SparseMatrix{R}, flags::Flags4) :: SNF{R} where {R}
     end
 end
 
-function _snf_dense_sorted(A::SparseMatrix{R}, flags::Flags4) :: SNF{R} where {R}
+function _snf_dense_sorted(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where {R}
     (m, n) = size(A)
     r = min(m, n)
 
@@ -127,12 +157,22 @@ function _snf_dense_sorted(A::SparseMatrix{R}, flags::Flags4) :: SNF{R} where {R
     SNF(d, T)
 end
 
-function _snf_compose(r, T1, next::SNF{R}) where {R} 
+function snf_compose(F1::SNF{R}, F2::SNF{R}) :: SNF{R} where {R}
+    if length(F2.factors) == 0
+        return F1
+    end
+
     I(k) = sparse_identity_matrix(R, k)
 
-    d = vcat(fill(one(R), r), next.factors)
+    r = length(F1.factors)
+    d = vcat(F1.factors, F2.factors)
     I = identity_transform(SparseMatrix{R}, (r, r))
-    T = T1 * (I ⊕ next.T)
+    T = F1.T * (I ⊕ F2.T)
 
     SNF(d, T)
+end
+
+function shift(p::Permutation, s::Int) :: Permutation
+   indices = append!( Array(1:s), map(i -> i + s, p.data) )
+   Permutation(indices)
 end
