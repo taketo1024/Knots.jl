@@ -36,7 +36,7 @@ end
 function Homology.generators(C::KhComplex, k::Int) :: Vector{KhChainGenerator}
     get!(C._generatorsCache, k) do 
         base = C.degShift[1] # <= 0
-        generators(C.cube, k - base)
+        chain_generators(C.cube, k - base)
     end
 end
 

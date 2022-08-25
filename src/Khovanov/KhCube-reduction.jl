@@ -14,8 +14,8 @@ end
 function reduce!(cube::KhCube{R}, k::Int) where {R}
     @debug "cube-reduce, k = $k"
 
-    Gₖ = generators(cube, k)
-    Gₖ₊₁ = generators(cube, k + 1)
+    Gₖ = chain_generators(cube, k)
+    Gₖ₊₁ = chain_generators(cube, k + 1)
 
     A = generate_matrix(Gₖ, Gₖ₊₁, R) do x 
         differentiate(cube, x)
