@@ -106,6 +106,13 @@ function nextVertices(cube::KhCube, u::State) :: Vector{State}
     end
 end
 
+function generators(cube::KhCube, degree::Int) :: Vector{KhChainGenerator}
+    Vs = vertices(cube, degree)
+    reduce(Vs; init=KhChainGenerator[]) do res, V
+        append!(res, V.generators)
+    end
+end
+
 # TODO: move to Utils
 Base.findfirst(arr::AbstractArray{T}, elm::T) where {T} = 
     findfirst( x -> x == elm, arr )

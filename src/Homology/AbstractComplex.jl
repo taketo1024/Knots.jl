@@ -21,7 +21,12 @@ end
 function differential(C::AbstractComplex{R, X}, k::Int) :: AbstractMatrix{R} where {R, X}
     Gₖ   = generators(C, k)
     Gₖ₊₁ = generators(C, k + differentialDegree(C))
+    generate_matrix(Gₖ, Gₖ₊₁, R) do x 
+        differentiate(C, k, x)
+    end
+end
 
+function generate_matrix(f, Gₖ::Vector{X}, Gₖ₊₁::Vector{X}, ::Type{R}) :: AbstractMatrix{R} where {R, X}
     n = length(Gₖ)
     m = length(Gₖ₊₁)
 
@@ -33,9 +38,11 @@ function differential(C::AbstractComplex{R, X}, k::Int) :: AbstractMatrix{R} whe
 
     for j in 1 : n 
         x = Gₖ[j]
-        ys = differentiate(C, k, x)
+        ys = f(x)
 
         for (y, r) in ys
+            y ∉ keys(gDict) && continue
+            
             i = gDict[y]
             push!(Is, i)
             push!(Js, j)
