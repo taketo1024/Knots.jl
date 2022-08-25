@@ -12,6 +12,8 @@ function reduce!(cube::KhCube)
 end
 
 function reduce!(cube::KhCube{R}, k::Int) where {R}
+    @debug "cube-reduce, k = $k"
+
     Gₖ = generators(cube, k)
     Gₖ₊₁ = generators(cube, k + 1)
 
@@ -34,6 +36,8 @@ function reduce!(cube::KhCube{R}, k::Int) where {R}
         remove_generator!(cube, x)
         remove_generator!(cube, y)
     end
+
+    @debug "cancelled $(length(targets)) pairs."
 
     (_, S, _) = schur_complement(A, piv; flags=(false, false, false, false))
 
