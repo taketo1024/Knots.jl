@@ -14,8 +14,10 @@ struct KhComplex{R} <: AbstractComplex{R, KhChainGenerator}
     end
 end
 
-KhComplex(str::KhAlgStructure{R}, l::Link; shift=true) where {R} = begin 
+KhComplex(str::KhAlgStructure{R}, l::Link; chain_reduction=true, shift=true) where {R} = begin 
     cube = KhCube(str, l)
+    chain_reduction && reduce!(cube)
+
     degShift = if shift
         (n₊, n₋) = signedCrossingNums(l)
         (-n₋, n₊ - 2n₋)
@@ -33,18 +35,11 @@ end
 
 function Homology.generators(C::KhComplex, k::Int) :: Vector{KhChainGenerator}
     get!(C._generatorsCache, k) do 
-        _generators(C, k)
+        base = C.degShift[1] # <= 0
+        generators(C.cube, k - base)
     end
 end
 
 function Homology.differentiate(C::KhComplex{R}, ::Int, x::KhChainGenerator) :: Vector{Pair{KhChainGenerator, R}} where {R}
     differentiate(C.cube, x)
-end
-
-function _generators(C::KhComplex, k::Int) :: Vector{KhChainGenerator}
-    base = C.degShift[1] # <= 0
-    vs = vertices(C.cube, k - base)
-    reduce(vs; init=KhChainGenerator[]) do res, v
-        append!(res, v.generators)
-    end
 end

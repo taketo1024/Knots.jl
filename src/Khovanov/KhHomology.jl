@@ -20,8 +20,8 @@ struct KhHomology{R} <: AbstractHomology{R}
     _SNFCache::Dict{Int, SNF{R}}
 end
 
-KhHomology(str::KhAlgStructure{R}, l::Link; shift=true) where {R} = begin 
-    C = KhComplex(str, l; shift=shift)
+KhHomology(str::KhAlgStructure{R}, l::Link; chain_reduction=true, shift=true) where {R} = begin 
+    C = KhComplex(str, l; chain_reduction=chain_reduction, shift=shift)
     sCache = Dict{Int, SNF{R}}()
     KhHomology{R}(l, C, sCache)
 end
