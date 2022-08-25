@@ -38,41 +38,27 @@ end
 
 function Homology.generators(C::KhComplex, k::Int) :: Vector{KhChainGenerator}
     get!(C._generatorsCache, k) do 
-        base = C.degShift[1] # <= 0
-        _generators(C.cube, k - base)
+        _generators(C, k)
     end
 end
 
 function Homology.differential(C::KhComplex{R}, k::Int) :: KhComplexMatrix{R} where {R}
     get!(C._differentialCache, k) do 
-        base = C.degShift[1] # <= 0
-        _differential(C.cube, k - base)
+        _differential(C, k)
     end
 end
 
-function _generators(cube::KhCube, degree::Int) :: Vector{KhChainGenerator}
-    n = dim(cube)
-
-    if degree ∉ 0 : n
-        []
-    elseif n == degree == 0
-        u = Int[]
-        vertex(cube, u).generators
-    else 
-        bits = Utils.bitseq(n, degree)
-        reduce(1 : length(bits); init=[]) do res, i
-            u = digits(bits[i], base=2, pad=n)
-            gens = vertex(cube, u).generators
-            append!(res, gens)
-        end
+function _generators(C::KhComplex, k::Int) :: Vector{KhChainGenerator}
+    base = C.degShift[1] # <= 0
+    vs = vertices(C.cube, k - base)
+    reduce(vs; init=KhChainGenerator[]) do res, v
+        append!(res, v.generators)
     end
 end
 
-function _differential(cube::KhCube{R}, degree::Int) :: KhComplexMatrix{R} where {R}
-    k = degree
-
-    Gₖ   = _generators(cube, k)
-    Gₖ₊₁ = _generators(cube, k + 1)
+function _differential(C::KhComplex{R}, k::Int) :: KhComplexMatrix{R} where {R}
+    Gₖ   = generators(C, k)
+    Gₖ₊₁ = generators(C, k + 1)
 
     n = length(Gₖ)
     m = length(Gₖ₊₁)
@@ -83,6 +69,8 @@ function _differential(cube::KhCube{R}, degree::Int) :: KhComplexMatrix{R} where
     Is = Vector{Int}()
     Js = Vector{Int}()
     Vs = Vector{R}()
+
+    cube = C.cube
 
     for j in 1 : n 
         x = Gₖ[j]

@@ -75,6 +75,23 @@ function vertex(cube::KhCube, u::State) :: KhCubeVertex
     end
 end
 
+function vertices(cube::KhCube, degree::Int) :: Vector{KhCubeVertex}
+    n = dim(cube)
+
+    return if degree ∉ 0 : n
+        []
+    elseif n == degree == 0
+        u = Int[]
+        [vertex(cube, u)]
+    else 
+        bits = Utils.bitseq(n, degree)
+        map(bits) do b
+            u = digits(b, base=2, pad=n)
+            vertex(cube, u)
+        end
+    end
+end
+
 function nextVertices(cube::KhCube, u::State) :: Vector{State}
     @assert length(u) == dim(cube)
 
