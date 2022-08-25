@@ -37,7 +37,7 @@ function Homology.generators(C::KhComplex, k::Int) :: Vector{KhChainGenerator}
     end
 end
 
-function Homology.differentiate(C::KhComplex{R}, ::Int, x::KhChainGenerator) :: Vector{Tuple{KhChainGenerator, R}} where {R}
+function Homology.differentiate(C::KhComplex{R}, ::Int, x::KhChainGenerator) :: Vector{Pair{KhChainGenerator, R}} where {R}
     differentiate(C.cube, x)
 end
 

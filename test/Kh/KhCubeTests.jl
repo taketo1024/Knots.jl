@@ -112,9 +112,9 @@ using Test
         y = vertex(cube, v).generators
 
         @test differentiate(cube, x[1]) == []
-        @test differentiate(cube, x[2]) == [(y[1], 1)]
-        @test differentiate(cube, x[3]) == [(y[1], 1)]
-        @test differentiate(cube, x[4]) == [(y[2], 1)]
+        @test differentiate(cube, x[2]) == [(y[1] => 1)]
+        @test differentiate(cube, x[3]) == [(y[1] => 1)]
+        @test differentiate(cube, x[4]) == [(y[2] => 1)]
     end
 
     @testset "differential-split" begin
@@ -126,8 +126,8 @@ using Test
         x = vertex(cube, u).generators
         y = vertex(cube, v).generators
 
-        @test differentiate(cube, x[1]) == [(y[1], 1)]
-        @test differentiate(cube, x[2]) == [(y[2], 1), (y[3], 1)]
+        @test differentiate(cube, x[1]) == [(y[1] => 1)]
+        @test differentiate(cube, x[2]) == [(y[2] => 1), (y[3] => 1)]
     end
 
     @testset "cache" begin

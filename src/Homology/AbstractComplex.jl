@@ -14,7 +14,7 @@ function differentialDegree(C::AbstractComplex) :: Int
     +1
 end
 
-function differentiate(C::AbstractComplex{R, X}, k::Int, x::X) :: Vector{Tuple{X, R}} where {R, X}
+function differentiate(C::AbstractComplex{R, X}, k::Int, x::X) :: Vector{Pair{X, R}} where {R, X}
     throw(MethodError(differentiate, (C, k, x)))
 end
 

@@ -162,7 +162,7 @@ function edges(cube::KhCube, u::State) :: Vector{KhCubeEdge}
     end
 end
 
-function differentiate(cube::KhCube{R}, x::KhChainGenerator) :: Vector{Tuple{KhChainGenerator, R}} where {R}
+function differentiate(cube::KhCube{R}, x::KhChainGenerator) :: Vector{Pair{KhChainGenerator, R}} where {R}
     u = x.state
     es = edges(cube, u)
 
@@ -172,7 +172,7 @@ function differentiate(cube::KhCube{R}, x::KhChainGenerator) :: Vector{Tuple{KhC
     end
 end
 
-function apply(cube::KhCube{R}, edg::KhCubeMergeEdge, x::KhChainGenerator) :: Vector{Tuple{KhChainGenerator, R}} where {R}
+function apply(cube::KhCube{R}, edg::KhCubeMergeEdge, x::KhChainGenerator) :: Vector{Pair{KhChainGenerator, R}} where {R}
     m = product(cube.structure) 
 
     (v, e, ((i, j), k)) = (edg.to, edg.sign, edg.transition)
@@ -184,11 +184,11 @@ function apply(cube::KhCube{R}, edg::KhCubeMergeEdge, x::KhChainGenerator) :: Ve
         deleteat!(label, i)
         insert!(label, k, yₖ)
         y = KhChainGenerator(v, label)
-        (y, e * r)
+        (y => e * r)
     end
 end
 
-function apply(cube::KhCube{R}, edg::KhCubeSplitEdge, x::KhChainGenerator) :: Vector{Tuple{KhChainGenerator, R}} where {R}
+function apply(cube::KhCube{R}, edg::KhCubeSplitEdge, x::KhChainGenerator) :: Vector{Pair{KhChainGenerator, R}} where {R}
     Δ = coproduct(cube.structure)
 
     (v, e, (i, (j, k))) = (edg.to, edg.sign, edg.transition)
@@ -200,6 +200,6 @@ function apply(cube::KhCube{R}, edg::KhCubeSplitEdge, x::KhChainGenerator) :: Ve
         insert!(label, j, yⱼ)
         insert!(label, k, yₖ)
         y = KhChainGenerator(v, label)
-        (y, e * r)
+        (y => e * r)
     end
 end
