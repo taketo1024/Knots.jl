@@ -53,13 +53,15 @@ Base.:(==)(e1::KhCubeEdge, e2::KhCubeEdge) :: Bool =
 struct KhCube{R} 
     structure::KhAlgStructure{R}
     link::Link
-    vertices::Dict{State, KhCubeVertex} # cache
+    vertices::Dict{State, KhCubeVertex}    # cache
     edges::Dict{State, Vector{KhCubeEdge}} # cache
+    targets::Dict{KhChainGenerator, Vector{Pair{KhChainGenerator, R}}} # cache
 
     KhCube(str::KhAlgStructure{R}, l::Link) where {R} = begin
         vertices = Dict{State, KhCubeVertex}()
         edges = Dict{State, Vector{KhCubeEdge}}()
-        new{R}(str, l, vertices, edges)
+        targets = Dict{KhChainGenerator, Vector{Pair{KhChainGenerator, R}}}()
+        new{R}(str, l, vertices, edges, targets)
     end
 end
 
@@ -162,16 +164,6 @@ function edges(cube::KhCube, u::State) :: Vector{KhCubeEdge}
     end
 end
 
-function differentiate(cube::KhCube{R}, x::KhChainGenerator) :: Vector{Pair{KhChainGenerator, R}} where {R}
-    u = x.state
-    es = edges(cube, u)
-
-    reduce(es; init=[]) do res, e
-        y = apply(cube, e, x)
-        append!(res, y)
-    end
-end
-
 function apply(cube::KhCube{R}, edg::KhCubeMergeEdge, x::KhChainGenerator) :: Vector{Pair{KhChainGenerator, R}} where {R}
     m = product(cube.structure) 
 
@@ -201,5 +193,19 @@ function apply(cube::KhCube{R}, edg::KhCubeSplitEdge, x::KhChainGenerator) :: Ve
         insert!(label, k, yₖ)
         y = KhChainGenerator(v, label)
         (y => e * r)
+    end
+end
+
+function differentiate(cube::KhCube{R}, x::KhChainGenerator) :: Vector{Pair{KhChainGenerator, R}} where {R}
+    if x in keys(cube.targets)
+        cube.targets[x]
+    else
+        u = x.state
+        es = edges(cube, u)
+
+        reduce(es; init=[]) do res, e
+            y = apply(cube, e, x)
+            append!(res, y)
+        end
     end
 end
