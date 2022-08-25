@@ -1,5 +1,5 @@
 using SparseArrays: findnz
-using ..Matrix: pivot, npivots, coordinates, permutations, schur_complement, print_matrix
+using ..Matrix: snf_iterate_pivots
 using ..Homology: generate_matrix
 
 # Cube reduction 
@@ -12,7 +12,7 @@ function reduce!(cube::KhCube)
 end
 
 function reduce!(cube::KhCube{R}, k::Int) where {R}
-    @debug "cube-reduce, k = $k"
+    @debug "cube-reduce (k: $k)"
 
     Gₖ = chain_generators(cube, k)
     Gₖ₊₁ = chain_generators(cube, k + 1)
@@ -21,16 +21,13 @@ function reduce!(cube::KhCube{R}, k::Int) where {R}
         differentiate(cube, x)
     end
 
-    piv = pivot(A)
-    r = npivots(piv)
-
+    (F, S, p, q) = snf_iterate_pivots(A; flags=(false, false, false, false))
+    r = length(F.factors)
     r == 0 && return 
 
-    (p, q) = permutations(piv)
-    targets = coordinates(piv)
+    targets = map( i -> (p(i), q(i)), 1:r)
 
-    for t in targets
-        (i, j) = Tuple(t)
+    for (i, j) in targets
         x = Gₖ[j]
         y = Gₖ₊₁[i]
         remove_generator!(cube, x)
@@ -38,8 +35,6 @@ function reduce!(cube::KhCube{R}, k::Int) where {R}
     end
 
     @debug "cancelled $(length(targets)) pairs."
-
-    (S, _) = schur_complement(A, piv; flags=(false, false, false, false))
 
     n = length(Gₖ)
     for j in 1 : n - r
@@ -56,8 +51,6 @@ function reduce!(cube::KhCube{R}, k::Int) where {R}
 
         cube.targets[x] = ys
     end
-
-    reduce!(cube, k)
 end
 
 function remove_generator!(cube::KhCube, x::KhChainGenerator)
