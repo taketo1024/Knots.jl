@@ -54,11 +54,11 @@ struct KhCube{R}
     structure::KhAlgStructure{R}
     link::Link
     vertices::Dict{State, KhCubeVertex} # cache
-    edges::Dict{Tuple{State, State}, KhCubeEdge} # cache
+    edges::Dict{State, Vector{KhCubeEdge}} # cache
 
     KhCube(str::KhAlgStructure{R}, l::Link) where {R} = begin
         vertices = Dict{State, KhCubeVertex}()
-        edges = Dict{Tuple{State, State}, KhCubeEdge}()
+        edges = Dict{State, Vector{KhCubeEdge}}()
         new{R}(str, l, vertices, edges)
     end
 end
@@ -121,12 +121,6 @@ function edgeSign(cube::KhCube, u::State, v::State) :: Int
 end
 
 function edge(cube::KhCube, u::State, v::State) :: KhCubeEdge
-    get!(cube.edges, (u, v)) do 
-        _edge(cube, u, v)
-    end
-end
-
-function _edge(cube::KhCube, u::State, v::State) :: KhCubeEdge
     @assert length(u) == length(v) == dim(cube)
     @assert sum(u) + 1 == sum(v)
 
@@ -159,13 +153,23 @@ function _edge(cube::KhCube, u::State, v::State) :: KhCubeEdge
     end
 end
 
-function edgeMap(cube::KhCube{R}, u::State, v::State, x::KhChainGenerator) :: Vector{Tuple{KhChainGenerator, R}} where {R}
-    @assert length(u) == length(v) == dim(cube)
-    @assert sum(u) + 1 == sum(v)
+function edges(cube::KhCube, u::State) :: Vector{KhCubeEdge}
+    get!(cube.edges, u) do 
+        vs = nextVertices(cube, u)
+        map(vs) do v
+            edge(cube, u, v)
+        end
+    end
+end
 
-    edg = edge(cube, u, v)
+function differentiate(cube::KhCube{R}, x::KhChainGenerator) :: Vector{Tuple{KhChainGenerator, R}} where {R}
+    u = x.state
+    es = edges(cube, u)
 
-    apply(cube, edg, x)
+    reduce(es; init=[]) do res, e
+        y = apply(cube, e, x)
+        append!(res, y)
+    end
 end
 
 function apply(cube::KhCube{R}, edg::KhCubeMergeEdge, x::KhChainGenerator) :: Vector{Tuple{KhChainGenerator, R}} where {R}

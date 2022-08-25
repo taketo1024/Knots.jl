@@ -1,7 +1,7 @@
 using Test
 
 @testset "KhCube" begin
-    using Knots.Khovanov: KhCube, KhCubeVertex, vertex, nextVertices, edge, edgeSign, edgeMap, mergeEdge, splitEdge
+    using Knots.Khovanov: KhCube, KhCubeVertex, vertex, nextVertices, edge, edgeSign, mergeEdge, splitEdge, differentiate
     using Knots.Khovanov: KhAlgStructure, KhAlgGenerator
     using Knots.Links
 
@@ -102,7 +102,7 @@ using Test
         @test e4 == mergeEdge([0, 1], [1, 1], +1, ((1, 2), 1))
     end
 
-    @testset "edgemap-merge" begin
+    @testset "differential-merge" begin
         l = Link([0, 0, 1, 1])
         cube = KhCube(A, l)
 
@@ -111,13 +111,13 @@ using Test
         x = vertex(cube, u).generators
         y = vertex(cube, v).generators
 
-        @test edgeMap(cube, u, v, x[1]) == []
-        @test edgeMap(cube, u, v, x[2]) == [(y[1], 1)]
-        @test edgeMap(cube, u, v, x[3]) == [(y[1], 1)]
-        @test edgeMap(cube, u, v, x[4]) == [(y[2], 1)]
+        @test differentiate(cube, x[1]) == []
+        @test differentiate(cube, x[2]) == [(y[1], 1)]
+        @test differentiate(cube, x[3]) == [(y[1], 1)]
+        @test differentiate(cube, x[4]) == [(y[2], 1)]
     end
 
-    @testset "edgemap-split" begin
+    @testset "differential-split" begin
         l = Link([0, 1, 1, 0])
         cube = KhCube(A, l)
 
@@ -126,8 +126,8 @@ using Test
         x = vertex(cube, u).generators
         y = vertex(cube, v).generators
 
-        @test edgeMap(cube, u, v, x[1]) == [(y[1], 1)]
-        @test edgeMap(cube, u, v, x[2]) == [(y[2], 1), (y[3], 1)]
+        @test differentiate(cube, x[1]) == [(y[1], 1)]
+        @test differentiate(cube, x[2]) == [(y[2], 1), (y[3], 1)]
     end
 
     @testset "cache" begin

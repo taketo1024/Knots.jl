@@ -64,29 +64,20 @@ function _differential(C::KhComplex{R}, k::Int) :: KhComplexMatrix{R} where {R}
     m = length(Gₖ₊₁)
 
     gDict = _generatorsDict(Gₖ₊₁)
-    vDict = Dict()
     
     Is = Vector{Int}()
     Js = Vector{Int}()
     Vs = Vector{R}()
 
-    cube = C.cube
-
     for j in 1 : n 
         x = Gₖ[j]
-        u = x.state
-        vs = get!(vDict, u) do 
-            nextVertices(cube, u)
-        end
+        ys = differentiate(C.cube, x)
 
-        for v in vs
-            ys = edgeMap(cube, u, v, x)
-            for (y, r) in ys
-                i = gDict[y]
-                push!(Is, i)
-                push!(Js, j)
-                push!(Vs, r)
-            end
+        for (y, r) in ys
+            i = gDict[y]
+            push!(Is, i)
+            push!(Js, j)
+            push!(Vs, r)
         end
     end
     
