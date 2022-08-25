@@ -1,21 +1,16 @@
-using SparseArrays
 using ..Links: Link, crossingNum, signedCrossingNums
 using ..Homology
 using ..Utils
 
-const KhComplexMatrix = SparseMatrixCSC
-
-struct KhComplex{R} <: AbstractComplex{R}
+struct KhComplex{R} <: AbstractComplex{R, KhChainGenerator}
     link::Link
     cube::KhCube{R}
     degShift::Tuple{Int, Int}
-    _generatorsCache::Dict{Int, Vector{KhChainGenerator}}
-    _differentialCache::Dict{Int, KhComplexMatrix{R}}
+    _generatorsCache::Dict{Int, Vector{KhChainGenerator}} # cache
 
     KhComplex(l::Link, cube::KhCube{R}, degShift::Tuple{Int, Int}) where {R} = begin
         gCache = Dict{Int, Vector{KhChainGenerator}}()
-        mCache = Dict{Int, KhComplexMatrix{R}}()
-        new{R}(l, cube, degShift, gCache, mCache)
+        new{R}(l, cube, degShift, gCache)
     end
 end
 
@@ -42,10 +37,8 @@ function Homology.generators(C::KhComplex, k::Int) :: Vector{KhChainGenerator}
     end
 end
 
-function Homology.differential(C::KhComplex{R}, k::Int) :: KhComplexMatrix{R} where {R}
-    get!(C._differentialCache, k) do 
-        _differential(C, k)
-    end
+function Homology.differentiate(C::KhComplex{R}, ::Int, x::KhChainGenerator) :: Vector{Tuple{KhChainGenerator, R}} where {R}
+    differentiate(C.cube, x)
 end
 
 function _generators(C::KhComplex, k::Int) :: Vector{KhChainGenerator}
@@ -54,36 +47,4 @@ function _generators(C::KhComplex, k::Int) :: Vector{KhChainGenerator}
     reduce(vs; init=KhChainGenerator[]) do res, v
         append!(res, v.generators)
     end
-end
-
-function _differential(C::KhComplex{R}, k::Int) :: KhComplexMatrix{R} where {R}
-    Gₖ   = generators(C, k)
-    Gₖ₊₁ = generators(C, k + 1)
-
-    n = length(Gₖ)
-    m = length(Gₖ₊₁)
-
-    gDict = _generatorsDict(Gₖ₊₁)
-    
-    Is = Vector{Int}()
-    Js = Vector{Int}()
-    Vs = Vector{R}()
-
-    for j in 1 : n 
-        x = Gₖ[j]
-        ys = differentiate(C.cube, x)
-
-        for (y, r) in ys
-            i = gDict[y]
-            push!(Is, i)
-            push!(Js, j)
-            push!(Vs, r)
-        end
-    end
-    
-    sparse(Is, Js, Vs, m, n)
-end
-
-function _generatorsDict(gens::Vector{KhChainGenerator}) :: Dict{KhChainGenerator, Int} 
-    Dict( gens[i] => i for i in 1 : length(gens) )
 end
