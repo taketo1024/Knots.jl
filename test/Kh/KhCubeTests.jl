@@ -10,8 +10,8 @@ using Test
 
     @testset "raw-vertex" begin
         l = Link([0, 0, 1, 1])
-        v0 = KhCubeVertex(l, [0])
-        v1 = KhCubeVertex(l, [1])
+        v0 = KhCubeVertex{Int}(l, [0])
+        v1 = KhCubeVertex{Int}(l, [1])
 
         @test v0.state == [0]
         @test length(v0.circles) == 2
