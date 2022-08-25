@@ -2,7 +2,7 @@ using Test
 
 @testset "Schur" begin
     using SparseArrays
-    using Knots.Matrix: pivot, schur_complement, print_matrix
+    using Knots.Matrix: pivot, npivots, schur_complement, print_matrix
     
     @testset "test" begin
         density = 0.1
@@ -10,7 +10,9 @@ using Test
         A = sparse([ rand() < density ? 1 : 0 for i in 1:m, j in 1:n])
 
         piv = pivot(A)
-        (r, S, T) = schur_complement(A, piv)
+        r = npivots(piv)
+        
+        (S, T) = schur_complement(A, piv)
         (P, Pinv, Q, Qinv) = T
 
         B = dropzeros(P * A * Q)

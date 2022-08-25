@@ -21,32 +21,47 @@ end
 
 # KhCubeEdge
 
-abstract type KhCubeEdgeType end
-
-struct mergeEdge <: KhCubeEdgeType
+struct KhCubeMergeEdge
+    from::State
+    to::State
     sign::Int
-    from::Tuple{Int, Int}
-    to::Int
+    transition::Tuple{Tuple{Int, Int}, Int}
 end
 
-struct splitEdge <: KhCubeEdgeType
+struct KhCubeSplitEdge
+    from::State
+    to::State
     sign::Int
-    from::Int
-    to::Tuple{Int, Int}
+    transition::Tuple{Int, Tuple{Int, Int}}
 end
+
+const KhCubeEdge = Union{KhCubeMergeEdge, KhCubeSplitEdge}
+
+function mergeEdge(from::State, to::State, sign::Int, transition::Tuple{Tuple{Int, Int}, Int}) :: KhCubeMergeEdge
+    KhCubeMergeEdge(from, to, sign, transition)
+end
+
+function splitEdge(from::State, to::State, sign::Int, transition::Tuple{Int, Tuple{Int, Int}}) :: KhCubeSplitEdge
+    KhCubeSplitEdge(from, to, sign, transition)
+end
+
+Base.:(==)(e1::KhCubeEdge, e2::KhCubeEdge) :: Bool = 
+    (e1.from, e1.to, e1.sign, e1.transition) == (e2.from, e2.to, e2.sign, e2.transition)
 
 # KhCube
 
 struct KhCube{R} 
     structure::KhAlgStructure{R}
     link::Link
-    _vertexCache::Dict{State, KhCubeVertex}
-    _edgeCache::Dict{Tuple{State, State}, Union{mergeEdge, splitEdge}}
+    vertices::Dict{State, KhCubeVertex}    # cache
+    edges::Dict{State, Vector{KhCubeEdge}} # cache
+    targets::Dict{KhChainGenerator, Vector{Pair{KhChainGenerator, R}}} # cache
 
     KhCube(str::KhAlgStructure{R}, l::Link) where {R} = begin
-        vCache = Dict{State, KhCubeVertex}()
-        eCache = Dict{Tuple{State, State}, Union{mergeEdge, splitEdge}}()
-        new{R}(str, l, vCache, eCache)
+        vertices = Dict{State, KhCubeVertex}()
+        edges = Dict{State, Vector{KhCubeEdge}}()
+        targets = Dict{KhChainGenerator, Vector{Pair{KhChainGenerator, R}}}()
+        new{R}(str, l, vertices, edges, targets)
     end
 end
 
@@ -57,8 +72,25 @@ end
 function vertex(cube::KhCube, u::State) :: KhCubeVertex
     @assert length(u) == dim(cube)
 
-    get!(cube._vertexCache, u) do 
+    get!(cube.vertices, u) do 
         KhCubeVertex(cube.link, u)
+    end
+end
+
+function vertices(cube::KhCube, degree::Int) :: Vector{KhCubeVertex}
+    n = dim(cube)
+
+    return if degree ∉ 0 : n
+        []
+    elseif n == degree == 0
+        u = Int[]
+        [vertex(cube, u)]
+    else 
+        bits = Utils.bitseq(n, degree)
+        map(bits) do b
+            u = digits(b, base=2, pad=n)
+            vertex(cube, u)
+        end
     end
 end
 
@@ -90,13 +122,7 @@ function edgeSign(cube::KhCube, u::State, v::State) :: Int
     (-1)^isodd(k)
 end
 
-function edge(cube::KhCube, u::State, v::State) :: Union{mergeEdge, splitEdge}
-    get!(cube._edgeCache, (u, v)) do 
-        _edge(cube, u, v)
-    end
-end
-
-function _edge(cube::KhCube, u::State, v::State) :: Union{mergeEdge, splitEdge}
+function edge(cube::KhCube, u::State, v::State) :: KhCubeEdge
     @assert length(u) == length(v) == dim(cube)
     @assert sum(u) + 1 == sum(v)
 
@@ -113,7 +139,7 @@ function _edge(cube::KhCube, u::State, v::State) :: Union{mergeEdge, splitEdge}
         if i₁ > i₂ 
             (i₁, i₂) = (i₂, i₁)
         end
-        mergeEdge(e, (i₁, i₂), j)
+        KhCubeMergeEdge(u, v, e, ((i₁, i₂), j))
 
     elseif (length(cᵤ), length(cᵥ)) == (1, 2)
         i  = findfirst(Cᵤ, cᵤ[1])
@@ -122,29 +148,26 @@ function _edge(cube::KhCube, u::State, v::State) :: Union{mergeEdge, splitEdge}
         if j₁ > j₂ 
             (j₁, j₂) = (j₂, j₁)
         end
-        splitEdge(e, i, (j₁, j₂))
+        KhCubeSplitEdge(u, v, e, (i, (j₁, j₂)))
 
     else
         throw(Exception)
     end
 end
 
-function edgeMap(cube::KhCube{R}, u::State, v::State, x::KhChainGenerator) :: Vector{Tuple{KhChainGenerator, R}} where {R}
-    @assert length(u) == length(v) == dim(cube)
-    @assert sum(u) + 1 == sum(v)
-
-    edg = edge(cube, u, v)
-    if isa(edg, mergeEdge)
-        _mergeEdgeMap(cube, edg, v, x)
-    else
-        _splitEdgeMap(cube, edg, v, x)
+function edges(cube::KhCube, u::State) :: Vector{KhCubeEdge}
+    get!(cube.edges, u) do 
+        vs = nextVertices(cube, u)
+        map(vs) do v
+            edge(cube, u, v)
+        end
     end
 end
 
-function _mergeEdgeMap(cube::KhCube{R}, edg::mergeEdge, v::State, x::KhChainGenerator) :: Vector{Tuple{KhChainGenerator, R}} where {R}
+function apply(cube::KhCube{R}, edg::KhCubeMergeEdge, x::KhChainGenerator) :: Vector{Pair{KhChainGenerator, R}} where {R}
     m = product(cube.structure) 
-        
-    (e, (i, j), k) = (edg.sign, edg.from, edg.to)
+
+    (v, e, ((i, j), k)) = (edg.to, edg.sign, edg.transition)
     (xᵢ, xⱼ) = (x.label[i], x.label[j])
 
     map(m(xᵢ, xⱼ)) do (yₖ, r) 
@@ -153,22 +176,45 @@ function _mergeEdgeMap(cube::KhCube{R}, edg::mergeEdge, v::State, x::KhChainGene
         deleteat!(label, i)
         insert!(label, k, yₖ)
         y = KhChainGenerator(v, label)
-        (y, e * r)
+        (y => e * r)
     end
 end
 
-function _splitEdgeMap(cube::KhCube{R}, edg::splitEdge, v::State, x::KhChainGenerator) :: Vector{Tuple{KhChainGenerator, R}} where {R}
+function apply(cube::KhCube{R}, edg::KhCubeSplitEdge, x::KhChainGenerator) :: Vector{Pair{KhChainGenerator, R}} where {R}
     Δ = coproduct(cube.structure)
 
-    (e, i, (j, k)) = (edg.sign, edg.from, edg.to)
+    (v, e, (i, (j, k))) = (edg.to, edg.sign, edg.transition)
     xᵢ = x.label[i]
     
-    res = map(Δ(xᵢ)) do (yⱼ, yₖ, r) 
+    map(Δ(xᵢ)) do (yⱼ, yₖ, r) 
         label = copy(x.label)
         deleteat!(label, i)
         insert!(label, j, yⱼ)
         insert!(label, k, yₖ)
         y = KhChainGenerator(v, label)
-        (y, e * r)
+        (y => e * r)
+    end
+end
+
+# KhComplex IF
+
+function chain_generators(cube::KhCube, degree::Int) :: Vector{KhChainGenerator}
+    Vs = vertices(cube, degree)
+    reduce(Vs; init=KhChainGenerator[]) do res, V
+        append!(res, V.generators)
+    end
+end
+
+function differentiate(cube::KhCube{R}, x::KhChainGenerator) :: Vector{Pair{KhChainGenerator, R}} where {R}
+    if x in keys(cube.targets)
+        cube.targets[x]
+    else
+        u = x.state
+        es = edges(cube, u)
+
+        reduce(es; init=[]) do res, e
+            y = apply(cube, e, x)
+            append!(res, y)
+        end
     end
 end

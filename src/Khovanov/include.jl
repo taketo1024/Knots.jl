@@ -3,6 +3,7 @@ module Khovanov
 include("KhAlgebra.jl")
 include("KhChain.jl")
 include("KhCube.jl")
+include("KhCube-reduction.jl")
 include("KhComplex.jl")
 include("KhHomology.jl")
 

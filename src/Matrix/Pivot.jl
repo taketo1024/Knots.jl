@@ -65,11 +65,11 @@ function coordinates(piv::Pivot) :: Vector{CartesianIndex{2}}
     end
 end
 
-function permutations(piv::Pivot) :: Tuple{Permutation, Permutation, Int}
+function permutations(piv::Pivot) :: Tuple{Permutation, Permutation}
     (m, n) = piv.size
     I = collect(values(piv.pivots))
     J = collect(keys(piv.pivots))
-    (permutation(I, m), permutation(J, n), length(I))
+    (permutation(I, m), permutation(J, n))
 end
 
 # private
@@ -98,7 +98,7 @@ function occupiedCols(piv::Pivot) :: Set{Int}
 end
 
 function findPivots!(piv::Pivot)
-    @debug "find pivots: A = size$(piv.size)"
+    @debug "find pivots, A = size$(piv.size)"
 
     findFLPivots!(piv)
     findFLColumnPivots!(piv)
@@ -127,7 +127,7 @@ function findFLPivots!(piv::Pivot)
     end
 
     npiv = length(piv.pivots)
-    @debug "found FL-pivots: $npiv."
+    @debug "└ FL-pivots: $npiv."
 end
 
 function findFLColumnPivots!(piv::Pivot)
@@ -158,7 +158,7 @@ function findFLColumnPivots!(piv::Pivot)
     end
 
     npiv = length(piv.pivots)
-    @debug "found FL-col-pivots: $(npiv - before), total: $npiv."
+    @debug "└ FL-col-pivots: $(npiv - before), total: $npiv."
 end
 
 function findCycleFreePivots!(piv::Pivot) :: Union{Int, Nothing}
@@ -167,14 +167,14 @@ function findCycleFreePivots!(piv::Pivot) :: Union{Int, Nothing}
 
     remain = remainingRows(piv)
 
-    if Threads.nthreads() > 0
+    if Threads.nthreads() > 1
         findCycleFreePivots_p!(piv, remain)
     else 
         findCycleFreePivots_s!(piv, remain)
     end
 
     npiv = length(piv.pivots)
-    @debug "found cycle-free-pivots: $(npiv - before), total: $npiv."
+    @debug "└ cycle-free-pivots: $(npiv - before), total: $npiv."
 end
 
 function findCycleFreePivots_s!(piv::Pivot, remain::Vector{Int}) :: Union{Int, Nothing}

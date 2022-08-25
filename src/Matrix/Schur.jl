@@ -1,9 +1,11 @@
 using SparseArrays: blockdiag, sparse_hvcat, spdiagm
 using LinearAlgebra: UnitUpperTriangular
 
-function schur_complement(A::SparseMatrix{R}, piv::Pivot{R}; flags=(true, true, true, true)) where {R}
+function schur_complement(A::SparseMatrix{R}, piv::Pivot{R}; flags=(true, true, true, true)) :: Tuple{SparseMatrix{R}, Transform{SparseMatrix{R}}} where {R}
     (m, n) = size(A)
-    (p, q, r) = permutations(piv)
+
+    r = npivots(piv)
+    (p, q) = permutations(piv)
 
     B = permute(A, p, q) # B = p⁻¹ A q
 
@@ -15,7 +17,7 @@ function schur_complement(A::SparseMatrix{R}, piv::Pivot{R}; flags=(true, true, 
         u = B[i, i]
         isone(u) && continue
 
-        B[:, i] .*= u # col-ops are faster
+        @views B[:, i] .*= u # col-ops are faster
         d[i] = u
     end
 
@@ -29,7 +31,7 @@ function schur_complement(A::SparseMatrix{R}, piv::Pivot{R}; flags=(true, true, 
         T = identity_transform(SparseMatrix{R}, (m, n))
     end
 
-    (r, S, T)
+    (S, T)
 end
 
 function _schur_complement_U(A::SparseMatrix{R}, r::Int, flags) where {R}
@@ -46,8 +48,8 @@ function _schur_complement_U(A::SparseMatrix{R}, r::Int, flags) where {R}
 
     (m, n) = size(A)
 
-    U = UnitUpperTriangular(A[1:r, 1:r])
-    Uinv = sparse(inv(U))
+    U = A[1:r, 1:r]
+    Uinv = inv_upper_triangular(U)
 
     X = A[1 : r, r + 1 : n]
     Y = A[r + 1 : m, 1 : r]
