@@ -65,11 +65,11 @@ function coordinates(piv::Pivot) :: Vector{CartesianIndex{2}}
     end
 end
 
-function permutations(piv::Pivot) :: Tuple{Permutation, Permutation, Int}
+function permutations(piv::Pivot) :: Tuple{Permutation, Permutation}
     (m, n) = piv.size
     I = collect(values(piv.pivots))
     J = collect(keys(piv.pivots))
-    (permutation(I, m), permutation(J, n), length(I))
+    (permutation(I, m), permutation(J, n))
 end
 
 # private
@@ -167,7 +167,7 @@ function findCycleFreePivots!(piv::Pivot) :: Union{Int, Nothing}
 
     remain = remainingRows(piv)
 
-    if Threads.nthreads() > 0
+    if Threads.nthreads() > 1
         findCycleFreePivots_p!(piv, remain)
     else 
         findCycleFreePivots_s!(piv, remain)

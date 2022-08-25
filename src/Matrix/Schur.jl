@@ -1,9 +1,11 @@
 using SparseArrays: blockdiag, sparse_hvcat, spdiagm
 using LinearAlgebra: UnitUpperTriangular
 
-function schur_complement(A::SparseMatrix{R}, piv::Pivot{R}; flags=(true, true, true, true)) where {R}
+function schur_complement(A::SparseMatrix{R}, piv::Pivot{R}; flags=(true, true, true, true)) :: Tuple{SparseMatrix{R}, Transform{SparseMatrix{R}}} where {R}
     (m, n) = size(A)
-    (p, q, r) = permutations(piv)
+
+    r = npivots(piv)
+    (p, q) = permutations(piv)
 
     B = permute(A, p, q) # B = p⁻¹ A q
 
@@ -29,7 +31,7 @@ function schur_complement(A::SparseMatrix{R}, piv::Pivot{R}; flags=(true, true, 
         T = identity_transform(SparseMatrix{R}, (m, n))
     end
 
-    (r, S, T)
+    (S, T)
 end
 
 function _schur_complement_U(A::SparseMatrix{R}, r::Int, flags) where {R}

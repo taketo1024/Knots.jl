@@ -39,7 +39,7 @@ function reduce!(cube::KhCube{R}, k::Int) where {R}
 
     @debug "cancelled $(length(targets)) pairs."
 
-    (_, S, _) = schur_complement(A, piv; flags=(false, false, false, false))
+    (S, _) = schur_complement(A, piv; flags=(false, false, false, false))
 
     n = length(Gₖ)
     for j in 1 : n - r

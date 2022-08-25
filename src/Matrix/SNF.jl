@@ -46,9 +46,11 @@ function _snf_preprocess(A::SparseMatrix{R}, flags::Flags4) :: SNF{R} where {R}
     @debug "snf-preprocess A: $(size(A)), density: $(density(A))"
 
     piv = pivot(A)
-    npivots(piv) == 0 && return snf(A; preprocess=false, flags=flags)
+    r = npivots(piv)
 
-    (r, S, T) = schur_complement(A, piv; flags=flags)
+    r == 0 && return snf(A; preprocess=false, flags=flags)
+
+    (S, T) = schur_complement(A, piv; flags=flags)
 
     if min(size(S)...) > 0 
         next = snf(S; flags=flags)
