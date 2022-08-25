@@ -38,7 +38,8 @@ function _solve_upper_trianguler!(U::SparseMatrix{R}, b::Vector{R}, x::Vector{R}
     vals = nonzeros(U)
 
     for j in reverse(1:n)
-        v = x[j] = b[j]
+        u = U[j, j] # must be unit
+        v = x[j] = div(b[j], u)
         for k in nzrange(U, j)
             i = rows[k]
             a = vals[k]

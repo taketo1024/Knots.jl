@@ -10,6 +10,7 @@ using SparseArrays
 using OrderedCollections
 using Permutations: Permutation
 using Base.Threads
+using ..Extensions: isunit
 using ..Utils: ReadWriteLock, read_lock, write_lock
 
 export Pivot, pivot, coordinates, permutations
@@ -42,7 +43,7 @@ Pivot(A::SparseMatrix{R}) where {R} = begin
         if rowHead[i] == 0 || j < rowHead[i]
             rowHead[i] = j
         end
-        if isone(a) || isone(-a)
+        if isunit(a)
             push!(candidates[i], j)
         end
     end

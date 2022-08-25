@@ -10,6 +10,10 @@ function normalizing_unit(a::T) :: Tuple{T, T} where {T<:AbstractGaloisField}
     iszero(a) ? (one(T), one(T)) : (inv(a), a)
 end
 
+function Base.div(a::T, b::T) :: T where {T<:AbstractGaloisField}
+    a * inv(b)
+end
+
 # workaround for Polynomial divrem
 function Base.isapprox(a::T, b::Int) :: Bool where {T<:AbstractGaloisField}
     a == T(b)

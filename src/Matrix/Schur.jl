@@ -9,26 +9,10 @@ function schur_complement(A::SparseMatrix{R}, piv::Pivot{R}; flags=(true, true, 
 
     B = permute(A, p, q) # B = p⁻¹ A q
 
-    # make left-upper of B, unittriangular
-
-    d = fill(one(R), n)
-
-    for i in 1 : r 
-        u = B[i, i]
-        isone(u) && continue
-
-        @views B[:, i] .*= u # col-ops are faster
-        d[i] = u
-    end
-
-    (S, T1) = _schur_complement_U(B, r, flags)
+    (S, T) = _schur_complement_U(B, r, flags)
 
     if any(flags)
-        I(k) = sparse_identity_matrix(R, k)
-        T0 = Transform(I(m), I(m), spdiagm(d), spdiagm(d))
-        T = permute(T0 * T1, p, q)
-    else
-        T = identity_transform(SparseMatrix{R}, (m, n))
+        T = permute(T, p, q)
     end
 
     (S, T)
