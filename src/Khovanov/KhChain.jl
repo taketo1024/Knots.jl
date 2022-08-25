@@ -22,10 +22,16 @@ end
 # elements of Cube(D) and CKh(D)
 
 mutable struct KhChain{R}
-    elements::Dict{KhChainGenerator,R}
+    elements::Dict{KhChainGenerator, R}
 end
 
-KhChain(elems::AbstractVector, coefs::AbstractVector) = KhChain(Dict(zip(elems, coefs)))
+function KhChain(elems::AbstractVector{KhChainGenerator}, coefs::AbstractVector) 
+    KhChain(Dict(zip(elems, coefs)))
+end
+
+function KhChain(elems::AbstractVector{Pair{KhChainGenerator, R}}) where {R} 
+    KhChain(Dict(elems))
+end
 
 function mapCoeffs(f, c::KhChain) :: KhChain
     KhChain( Dict( k => f(v) for (k, v) in c.elements ) )
