@@ -98,7 +98,7 @@ function occupiedCols(piv::Pivot) :: Set{Int}
 end
 
 function findPivots!(piv::Pivot)
-    @debug "find pivots: A = size$(piv.size)"
+    @debug "find pivots, A = size$(piv.size)"
 
     findFLPivots!(piv)
     findFLColumnPivots!(piv)
@@ -127,7 +127,7 @@ function findFLPivots!(piv::Pivot)
     end
 
     npiv = length(piv.pivots)
-    @debug "found FL-pivots: $npiv."
+    @debug "└ FL-pivots: $npiv."
 end
 
 function findFLColumnPivots!(piv::Pivot)
@@ -158,7 +158,7 @@ function findFLColumnPivots!(piv::Pivot)
     end
 
     npiv = length(piv.pivots)
-    @debug "found FL-col-pivots: $(npiv - before), total: $npiv."
+    @debug "└ FL-col-pivots: $(npiv - before), total: $npiv."
 end
 
 function findCycleFreePivots!(piv::Pivot) :: Union{Int, Nothing}
@@ -174,7 +174,7 @@ function findCycleFreePivots!(piv::Pivot) :: Union{Int, Nothing}
     end
 
     npiv = length(piv.pivots)
-    @debug "found cycle-free-pivots: $(npiv - before), total: $npiv."
+    @debug "└ cycle-free-pivots: $(npiv - before), total: $npiv."
 end
 
 function findCycleFreePivots_s!(piv::Pivot, remain::Vector{Int}) :: Union{Int, Nothing}

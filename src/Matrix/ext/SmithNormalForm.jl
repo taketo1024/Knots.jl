@@ -272,7 +272,7 @@ function _snf_step1(
 
         prow = select_pivot(A, t, j)
 
-        @debug "Pivot Row selected: t = $t, pivot = ($prow, $j): $(A[prow, :])"
+        # @debug "Pivot Row selected: t = $t, pivot = ($prow, $j): $(A[prow, :])"
 
         # swap rows
         rswap!(A, t, prow)
