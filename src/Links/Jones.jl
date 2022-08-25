@@ -1,3 +1,5 @@
+export JonesPolynomial, jonesPolynomial
+
 using Polynomials
 
 const JonesPolynomial = LaurentPolynomial{Int, :q}

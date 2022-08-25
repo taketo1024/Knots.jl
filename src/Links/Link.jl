@@ -1,3 +1,7 @@
+export Link, State
+export isEmpty, crossingNum, signedCrossingNums, writhe, components, mirror
+export emptyLink, unknot, trefoil, figure8, hopfLink
+
 #typealiases
 
 const Edge = Int
@@ -336,3 +340,10 @@ const unknot = resolve(Link([1, 2, 2, 1]), [0])
 const trefoil = Link([1,4,2,5],[3,6,4,1],[5,2,6,3])
 const figure8 = Link([4,2,5,1],[8,6,1,5],[6,3,7,4],[2,7,3,8])
 const hopfLink = Link([4,1,3,2],[2,3,1,4])
+
+using JSON
+function Link(name::String)
+    json = JSON.parsefile("files/links/$name.json"; inttype=Int)
+    data = convert(Vector{Vector{Int}}, json)
+    Link(data)
+end
