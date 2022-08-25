@@ -15,7 +15,7 @@ function schur_complement(A::SparseMatrix{R}, piv::Pivot{R}; flags=(true, true, 
         u = B[i, i]
         isone(u) && continue
 
-        B[:, i] .*= u # col-ops are faster
+        @views B[:, i] .*= u # col-ops are faster
         d[i] = u
     end
 
@@ -46,8 +46,8 @@ function _schur_complement_U(A::SparseMatrix{R}, r::Int, flags) where {R}
 
     (m, n) = size(A)
 
-    U = UnitUpperTriangular(A[1:r, 1:r])
-    Uinv = sparse(inv(U))
+    U = A[1:r, 1:r]
+    Uinv = inv_upper_triangular(U)
 
     X = A[1 : r, r + 1 : n]
     Y = A[r + 1 : m, 1 : r]
