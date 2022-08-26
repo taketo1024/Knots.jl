@@ -10,11 +10,12 @@ function inv_upper_triangular(U::SparseMatrix{R}) :: SparseMatrix{R} where {R}
 
     x = fill(zero, n)
     e = fill(zero, n)
+    d = diagonal_entries(U)
 
     for j in 1:n
         e[j] = one
 
-        _solve_upper_trianguler!(U, e, x)
+        _solve_upper_trianguler!(U, d, e, x)
 
         for (i, a) in enumerate(x)
             iszero(a) && continue
@@ -31,14 +32,14 @@ function inv_upper_triangular(U::SparseMatrix{R}) :: SparseMatrix{R} where {R}
     sparse(Is, Js, Vs, n, n)
 end
 
-function _solve_upper_trianguler!(U::SparseMatrix{R}, b::Vector{R}, x::Vector{R}) :: Vector{R} where {R}
-    n = size(U)[1]
+function _solve_upper_trianguler!(U::SparseMatrix{R}, d::Vector{R}, b::Vector{R}, x::Vector{R}) :: Vector{R} where {R}
+    n = size(U, 1)
 
     rows = rowvals(U)
     vals = nonzeros(U)
 
     for j in reverse(1:n)
-        u = U[j, j] # must be unit
+        u = d[j] # must be unit
         v = x[j] = div(b[j], u)
         for k in nzrange(U, j)
             i = rows[k]
