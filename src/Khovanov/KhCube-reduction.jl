@@ -1,5 +1,5 @@
 using SparseArrays: findnz
-using ..Matrix: snf_iterate_pivots
+using ..Matrix: snf_preprocess
 using ..Homology: generate_matrix
 
 # Cube reduction 
@@ -21,7 +21,7 @@ function reduce!(cube::KhCube{R}, k::Int) where {R}
         differentiate(cube, x)
     end
 
-    (F, S, p, q) = snf_iterate_pivots(A; flags=(false, false, false, false))
+    (F, S, p, q) = snf_preprocess(A; flags=(false, false, false, false))
     r = length(F.factors)
     r == 0 && return 
 

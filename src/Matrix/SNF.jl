@@ -38,7 +38,7 @@ function snf(A::SparseMatrix{R}; preprocess=true, flags::Flags4=(true, true, tru
     if iszero(A)
         snf_zero(A)
     elseif preprocess
-        snf_preprocess(A; flags=flags)
+        snf_with_preprocess(A; flags=flags)
     elseif density(A) < d_threshold
         snf_sparse(A; flags=flags)
     else
@@ -46,10 +46,8 @@ function snf(A::SparseMatrix{R}; preprocess=true, flags::Flags4=(true, true, tru
     end
 end
 
-function snf_preprocess(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where {R}
-    @debug "snf-preprocess A: $(size(A)), density: $(density(A))"
-
-    (F, S) = snf_iterate_pivots(A; flags=flags)
+function snf_with_preprocess(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where {R}
+    (F, S) = snf_preprocess(A; flags=flags)
     
     if !iszero(S)
         F₂ = snf(S; preprocess=false, flags=flags)
@@ -59,12 +57,12 @@ function snf_preprocess(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where {R}
     end
 end
 
-function snf_iterate_pivots(A::SparseMatrix{R}; flags::Flags4, itr=1) :: Tuple{SNF{R}, SparseMatrix{R}, Permutation, Permutation} where {R}
-    @debug "snf-pivots (step: $itr) A: $(size(A)), density: $(density(A))"
-
+function snf_preprocess(A::SparseMatrix{R}; flags::Flags4, itr=1) :: Tuple{SNF{R}, SparseMatrix{R}, Permutation, Permutation} where {R}
     if iszero(A)
         return (snf_zero(A), A)
     end
+
+    @debug "snf-preprocess (step: $itr) A: $(size(A)), density: $(density(A))"
 
     piv = pivot(A)
     r = npivots(piv)
@@ -80,7 +78,7 @@ function snf_iterate_pivots(A::SparseMatrix{R}; flags::Flags4, itr=1) :: Tuple{S
     F = SNF(d, T)
 
     if !iszero(S)
-        (F₂, S₂, p₂, q₂) = snf_iterate_pivots(S; flags=flags, itr=itr+1)
+        (F₂, S₂, p₂, q₂) = snf_preprocess(S; flags=flags, itr=itr+1)
 
         F = snf_compose(F, F₂)
         S = S₂
@@ -107,6 +105,7 @@ end
 
 function snf_dense(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where {R}
     @debug "snf-dense A: $(size(A)), density: $(density(A))"
+    
     I(k) = sparse_identity_matrix(R, k)
     (m, n) = size(A)
 
