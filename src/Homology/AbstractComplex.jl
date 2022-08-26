@@ -1,4 +1,6 @@
 using SparseArrays: sparse
+using Permutations
+using ..Matrix: snf_preprocess
 
 abstract type AbstractComplex{R, X} end
 
@@ -51,4 +53,45 @@ function generate_matrix(f, Gₖ::Vector{X}, Gₖ₊₁::Vector{X}, ::Type{R}) :
     end
     
     sparse(Is, Js, Vs, m, n)
+end
+
+function reduce_all!(C::AbstractComplex)
+    for k in hDegRange(C)
+        reduce!(C, k)
+    end
+end
+
+function reduce!(C::AbstractComplex, k::Int)
+    @debug "reduce C[$k]."
+
+    A = differential(C, k)
+
+    (F, S, p, q) = snf_preprocess(A; flags=(false, false, false, false))
+    r = length(F.factors) # diagonal entries of units.
+
+    if r == 0 
+        @debug "nothing to reduce."
+        return
+    end
+
+    k₊₁ = k + differentialDegree(C)
+    nₖ   = length(generators(C, k))
+    nₖ₊₁ = length(generators(C, k₊₁))
+
+    drop_generators!(C, k, r, q)
+    drop_generators!(C, k₊₁, r, p)
+    set_differential!(C, k, S)
+
+    @debug """cancelled $r pairs of generators.
+      C[$k]: $nₖ -> $(nₖ - r)
+      C[$k₊₁]: $nₖ₊₁ -> $(nₖ₊₁ - r)
+    """
+end
+
+function drop_generators!(C::AbstractComplex, k::Int, r::Int, p::Permutation)
+    throw(MethodError(drop_generators!, (C, k, r, p)))
+end
+
+function set_differential!(C::AbstractComplex{R}, k::Int, A::AbstractMatrix{R}) where {R}
+    throw(MethodError(set_differential!, (C, k, A)))
 end

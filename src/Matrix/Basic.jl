@@ -1,7 +1,7 @@
 using SparseArrays
 using Permutations
 
-export SparseMatrix, print_matrix
+export SparseMatrix, permute, permute_row, permute_col, print_matrix
 
 const DenseMatrix{R} = Base.Matrix{R}
 const SparseMatrix{R} = SparseArrays.SparseMatrixCSC{R, Int}
@@ -38,4 +38,13 @@ end
 
 function print_matrix(A::AbstractMatrix)
     Base.print_matrix(stdout, A, "[", " ", "]\n")
+end
+
+function diagonal_entries(A::AbstractSparseArray{R}) :: Vector{R} where {R}
+    r = minimum(size(A))
+    d = fill(zero(R), r)
+    for (i, j, a) in zip(findnz(A)...)
+        i == j && (d[i] = a)
+    end
+    d
 end

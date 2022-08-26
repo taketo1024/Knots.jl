@@ -55,13 +55,11 @@ struct KhCube{R}
     link::Link
     vertices::Dict{State, KhCubeVertex}    # cache
     edges::Dict{State, Vector{KhCubeEdge}} # cache
-    targets::Dict{KhChainGenerator, Vector{Pair{KhChainGenerator, R}}} # cache
 
     KhCube(str::KhAlgStructure{R}, l::Link) where {R} = begin
         vertices = Dict{State, KhCubeVertex}()
         edges = Dict{State, Vector{KhCubeEdge}}()
-        targets = Dict{KhChainGenerator, Vector{Pair{KhChainGenerator, R}}}()
-        new{R}(str, l, vertices, edges, targets)
+        new{R}(str, l, vertices, edges)
     end
 end
 
@@ -206,15 +204,11 @@ function chain_generators(cube::KhCube, degree::Int) :: Vector{KhChainGenerator}
 end
 
 function differentiate(cube::KhCube{R}, x::KhChainGenerator) :: Vector{Pair{KhChainGenerator, R}} where {R}
-    if x in keys(cube.targets)
-        cube.targets[x]
-    else
-        u = x.state
-        es = edges(cube, u)
+    u = x.state
+    es = edges(cube, u)
 
-        reduce(es; init=[]) do res, e
-            y = apply(cube, e, x)
-            append!(res, y)
-        end
+    reduce(es; init=[]) do res, e
+        y = apply(cube, e, x)
+        append!(res, y)
     end
 end

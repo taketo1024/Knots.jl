@@ -1,3 +1,5 @@
+export subscript, superscript, count_occurrence
+
 function subscript(i::Int) :: String
     c = i < 0 ? [Char(0x208B)] : []
     for d in reverse(digits(abs(i)))
@@ -16,4 +18,10 @@ function superscript(i::Int) :: String
         if d > 3 push!(c, Char(0x2070+d)) end
     end
     join(c)
+end
+
+function count_occurrence(arr::Vector{X}) :: Dict{X, Int} where {X}
+    reduce(arr; init=Dict{X, Int}()) do res, x
+        push!(res, x => get!(res, x, 0) + 1)
+    end
 end
