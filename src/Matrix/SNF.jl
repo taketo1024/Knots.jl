@@ -32,7 +32,6 @@ function snf_zero(A::SparseMatrix{R}) :: SNF{R} where {R}
 end
 
 function snf(A::SparseMatrix{R}; preprocess=true, flags::Flags4=(true, true, true, true)) :: SNF{R} where {R}
-    @debug "snf A: $(size(A)), density: $(density(A))"
     d_threshold = 0.5
 
     if iszero(A)
@@ -58,11 +57,7 @@ function snf_with_preprocess(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where 
 end
 
 function snf_preprocess(A::SparseMatrix{R}; flags::Flags4, itr=1) :: Tuple{SNF{R}, SparseMatrix{R}, Permutation, Permutation} where {R}
-    if iszero(A)
-        return (snf_zero(A), A)
-    end
-
-    @debug "snf-preprocess (step: $itr) A: $(size(A)), density: $(density(A))"
+    @debug "snf-preprocess (step $itr)" A = size(A) density = density(A)
 
     piv = pivot(A)
     r = npivots(piv)
@@ -85,12 +80,16 @@ function snf_preprocess(A::SparseMatrix{R}; flags::Flags4, itr=1) :: Tuple{SNF{R
         p = p * shift(p₂, r)
         q = q * shift(q₂, r)
     end
+
+    if itr == 1
+        @debug "snf-preprocess done, total_pivots = $(length(F.factors))"
+    end
     
     (F, S, p, q)
 end
 
 function snf_sparse(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where {R}
-    @debug "snf-sparse A: $(size(A)), density: $(density(A))"
+    @debug "snf-sparse" A = size(A) density = density(A)
 
     r = min(size(A)...)
     (S, P, Pinv, Q, Qinv) = SmithNormalForm_x.snf(A; flags=flags)
@@ -104,8 +103,8 @@ function snf_sparse(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where {R}
 end
 
 function snf_dense(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where {R}
-    @debug "snf-dense A: $(size(A)), density: $(density(A))"
-    
+    @debug "snf-dense" A = size(A) density = density(A)
+
     I(k) = sparse_identity_matrix(R, k)
     (m, n) = size(A)
 
