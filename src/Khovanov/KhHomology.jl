@@ -1,6 +1,5 @@
 using SparseArrays
 using ..Links: Link
-using ..Matrix: SNF
 using ..Homology
 using ..Utils
 
@@ -17,13 +16,12 @@ Homology.torsions(s::KhHomologySummand) = s.torsions
 struct KhHomology{R} <: AbstractHomology{R} 
     link::Link
     complex::KhComplex{R}
-    _SNFCache::Dict{Int, SNF{R}}
+    chain_reduction::Bool
 end
 
 KhHomology(str::KhAlgStructure{R}, l::Link; chain_reduction=true, shift=true) where {R} = begin 
     C = KhComplex(str, l; chain_reduction=chain_reduction, shift=shift)
-    sCache = Dict{Int, SNF{R}}()
-    KhHomology{R}(l, C, sCache)
+    KhHomology{R}(l, C, chain_reduction)
 end
 
 Homology.complex(H::KhHomology) = 
@@ -33,7 +31,8 @@ Homology.makeSummand(H::KhHomology, rank::Int, torsions::Vector) =
     KhHomologySummand(rank, torsions)
 
 function Homology.compute(H::KhHomology{R}, k::Int) :: KhHomologySummand{R} where {R}
-    Homology.compute_single(H, k)
+    prep = !H.chain_reduction
+    Homology.compute_single(H, k; preprocess=prep)
 end
 
 function Homology.asString(H::KhHomology) :: String
