@@ -1,5 +1,5 @@
 using ..Extensions: symbol
-using ..Utils: superscript
+using ..Utils: superscript, count_occurrence
 
 abstract type AbstractHomologySummand{R} end
 
@@ -14,14 +14,20 @@ end
 function asString(s::AbstractHomologySummand{R}) :: String where {R}
     iszero(s) && return "⋅"
     
+    res = String[]
     R_str = symbol(R)
 
     r = rank(s)
-    r_str = r > 1 ? superscript(r) : ""
+    if r > 0
+        r_str = r > 1 ? R_str * superscript(r) : R_str
+        push!(res, r_str)
+    end
 
-    res = (r > 0) ? ["$R_str$r_str"] : []
-    for t in torsions(s)
-        push!(res, "$R_str/$t")
+    tor_count = count_occurrence(torsions(s))
+    for (t, r) in tor_count
+        t_str = "$R_str/$t"
+        t_str = r > 1 ? "($t_str)" * superscript(r) : t_str
+        push!(res, t_str)
     end
 
     join(res, " ⊕ ")
