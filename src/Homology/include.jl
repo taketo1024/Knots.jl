@@ -6,6 +6,6 @@ include("AbstractHomology.jl")
 include("HomologyComputations.jl")
 
 export AbstractHomology, AbstractHomologySummand, AbstractComplex
-export hDegRange, generators, differential, differentialDegree
+export hDegRange, generators, differential, differentialDegree, reduce_all!, reduce!
 
 end
