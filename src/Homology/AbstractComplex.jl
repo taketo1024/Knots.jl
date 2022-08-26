@@ -1,4 +1,5 @@
 using SparseArrays: sparse
+using Permutations
 using ..Matrix: snf_preprocess
 
 abstract type AbstractComplex{R, X} end
@@ -54,14 +55,6 @@ function generate_matrix(f, Gₖ::Vector{X}, Gₖ₊₁::Vector{X}, ::Type{R}) :
     sparse(Is, Js, Vs, m, n)
 end
 
-function set_generators(C::AbstractComplex{R, X}, ::Int, ::Vector{X}) where {R, X}
-    @warn "`set_generators` not implemented in $(typeof(C))."
-end
-
-function set_differential(C::AbstractComplex{R}, ::Int, ::AbstractMatrix{R}) where {R}
-    @warn "`set_differential` not implemented in $(typeof(C))."
-end
-
 function reduce_all!(C::AbstractComplex)
     for k in hDegRange(C)
         reduce!(C, k)
@@ -82,24 +75,23 @@ function reduce!(C::AbstractComplex, k::Int)
     end
 
     k₊₁ = k + differentialDegree(C)
+    nₖ   = length(generators(C, k))
+    nₖ₊₁ = length(generators(C, k₊₁))
 
-    Gₖ   = generators(C, k)
-    Gₖ₊₁ = generators(C, k₊₁)
-
-    for j in reverse( sort([ q(j) for j in 1:r ]) )
-        deleteat!(Gₖ, j)
-    end
-
-    for i in reverse( sort([ p(i) for i in 1:r ]) )
-        deleteat!(Gₖ₊₁, i)
-    end
-
-    set_generators(C, k, Gₖ)
-    set_generators(C, k₊₁, Gₖ₊₁)
-    set_differential(C, k, S)
+    drop_generators!(C, k, r, q)
+    drop_generators!(C, k₊₁, r, p)
+    set_differential!(C, k, S)
 
     @debug """cancelled $r pairs of generators.
-    C[$k]: $(length(Gₖ) + r) -> $(length(Gₖ))
-    C[$k₊₁]: $(length(Gₖ₊₁) + r) -> $(length(Gₖ₊₁))
+      C[$k]: $nₖ -> $(nₖ - r)
+      C[$k₊₁]: $nₖ₊₁ -> $(nₖ₊₁ - r)
     """
+end
+
+function drop_generators!(C::AbstractComplex, k::Int, r::Int, p::Permutation)
+    throw(MethodError(drop_generators!, (C, k, r, p)))
+end
+
+function set_differential!(C::AbstractComplex{R}, k::Int, A::AbstractMatrix{R}) where {R}
+    throw(MethodError(set_differential!, (C, k, A)))
 end

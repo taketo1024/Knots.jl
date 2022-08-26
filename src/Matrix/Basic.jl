@@ -1,7 +1,7 @@
 using SparseArrays
 using Permutations
 
-export SparseMatrix, print_matrix
+export SparseMatrix, permute, permute_row, permute_col, print_matrix
 
 const DenseMatrix{R} = Base.Matrix{R}
 const SparseMatrix{R} = SparseArrays.SparseMatrixCSC{R, Int}

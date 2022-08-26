@@ -1,3 +1,4 @@
+using Permutations
 using ..Links: Link, crossingNum, signedCrossingNums
 using ..Matrix
 using ..Homology
@@ -47,8 +48,17 @@ function Homology.generators(C::KhComplex, k::Int) :: Vector{KhChainGenerator}
     end
 end
 
-function Homology.set_generators(C::KhComplex, k::Int, g::Vector{KhChainGenerator})
-    C.generators[k] = g
+function Homology.drop_generators!(C::KhComplex, k::Int, r::Int, p::Permutation)
+    gens = generators(C, k)
+    n = length(gens)
+
+    C.generators[k] = [ gens[p(i)] for i in r+1:n ]
+
+    k₋₁ = k - differentialDegree(C)
+    if k₋₁ in keys(C.differentials)
+        A = C.differentials[k₋₁]
+        C.differentials[k₋₁] = permute_row(A, p)[r+1:n, :]
+    end
 end
 
 function Homology.differentiate(C::KhComplex{R}, ::Int, x::KhChainGenerator) :: Vector{Pair{KhChainGenerator, R}} where {R}
@@ -61,6 +71,6 @@ function Homology.differential(C::KhComplex{R}, k::Int) :: SparseMatrix{R} where
     end
 end
 
-function Homology.set_differential(C::KhComplex{R}, k::Int, A::SparseMatrix{R}) where {R}
+function Homology.set_differential!(C::KhComplex{R}, k::Int, A::SparseMatrix{R}) where {R}
     C.differentials[k] = A
 end
