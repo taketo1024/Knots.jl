@@ -2,13 +2,14 @@ using ..Links: Link, State, Component, resolve, components, crossingNum
 
 # KhCubeVertex
 
-struct KhCubeVertex
+struct KhCubeVertex{R}
     state::State
     circles::Vector{Component}
     generators::Vector{KhChainGenerator}
+    targets::Dict{KhChainGenerator, Vector{Pair{KhChainGenerator, R}}} # cache
 end
 
-function KhCubeVertex(l::Link, s::State) :: KhCubeVertex
+function KhCubeVertex{R}(l::Link, s::State) where {R}
     circles = components(resolve(l, s))
     r = length(circles)
     generators = map(0 : 2^r - 1) do i in
@@ -16,7 +17,21 @@ function KhCubeVertex(l::Link, s::State) :: KhCubeVertex
         label = map(b -> (b == 0) ? X : I, bits)
         KhChainGenerator(s, label)
     end
-    KhCubeVertex(s, circles, generators)
+    targets = Dict{KhChainGenerator, Vector{Pair{KhChainGenerator, R}}}()
+    KhCubeVertex(s, circles, generators, targets)
+end
+
+function describe(V::KhCubeVertex)
+    V_str = "V$(V.state)"
+    comps_str = join(map(x -> string(x), V.circles), ", ")
+    println("$V_str : ($comps_str)")
+
+    for x in V.generators
+        println("  $x")
+        for y in get(V.targets, x, [])
+            println("  -> $y")
+        end
+    end
 end
 
 # KhCubeEdge
@@ -67,11 +82,11 @@ function dim(cube::KhCube)
     crossingNum(cube.link)
 end
 
-function vertex(cube::KhCube, u::State) :: KhCubeVertex
+function vertex(cube::KhCube{R}, u::State) :: KhCubeVertex where {R}
     @assert length(u) == dim(cube)
 
     get!(cube.vertices, u) do 
-        KhCubeVertex(cube.link, u)
+        KhCubeVertex{R}(cube.link, u)
     end
 end
 
@@ -194,6 +209,15 @@ function apply(cube::KhCube{R}, edg::KhCubeSplitEdge, x::KhChainGenerator) :: Ve
     end
 end
 
+function describe(cube::KhCube)
+    n = dim(cube)
+    for i in 0:n
+        for V in vertices(cube, i)
+            describe(V)
+        end
+    end
+end
+
 # KhComplex IF
 
 function chain_generators(cube::KhCube, degree::Int) :: Vector{KhChainGenerator}
@@ -205,10 +229,12 @@ end
 
 function differentiate(cube::KhCube{R}, x::KhChainGenerator) :: Vector{Pair{KhChainGenerator, R}} where {R}
     u = x.state
-    es = edges(cube, u)
-
-    reduce(es; init=[]) do res, e
-        y = apply(cube, e, x)
-        append!(res, y)
+    V = vertex(cube, u)
+    get!(V.targets, x) do 
+        es = edges(cube, u)
+        reduce(es; init=[]) do res, e
+            y = apply(cube, e, x)
+            append!(res, y)
+        end
     end
 end
