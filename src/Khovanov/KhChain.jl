@@ -1,4 +1,5 @@
 using ..Links: State
+using ..Utils: subscript
 
 # KhEnhancedState
 # Generators of Cube(D) and CKh(D)
@@ -8,8 +9,10 @@ struct KhChainGenerator
     label::Vector{KhAlgGenerator}
 end
 
-function asString(x::KhChainGenerator) 
-    isempty(x.label) ? "1" : "$(join(x.label, ""))$(join(map(b -> (b == 0) ? "₀" : "₁", x.state), ""))"
+function asString(x::KhChainGenerator)
+    label_str = isempty(x.label) ? "()" : join(map(asString, x.label), "")
+    state_str = join(map(subscript, x.state), "")
+    label_str * state_str
 end
 
 Base.show(io::IO, x::KhChainGenerator) = print(io, asString(x))
