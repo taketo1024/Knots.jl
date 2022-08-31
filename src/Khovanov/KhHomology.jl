@@ -16,12 +16,11 @@ Homology.torsions(s::KhHomologySummand) = s.torsions
 struct KhHomology{R} <: AbstractHomology{R} 
     link::Link
     complex::KhComplex{R}
-    chain_reduction::Bool
 end
 
-KhHomology(str::KhAlgStructure{R}, l::Link; chain_reduction=true, shift=true) where {R} = begin 
-    C = KhComplex(str, l; chain_reduction=chain_reduction, shift=shift)
-    KhHomology{R}(l, C, chain_reduction)
+KhHomology(str::KhAlgStructure{R}, l::Link; reduced=false, shifted=true, perform_reduction=true) where {R} = begin 
+    C = KhComplex(str, l; reduced=reduced, shifted=shifted, perform_reduction=perform_reduction)
+    KhHomology{R}(l, C)
 end
 
 Homology.complex(H::KhHomology) = 
@@ -31,8 +30,7 @@ Homology.makeSummand(H::KhHomology, rank::Int, torsions::Vector) =
     KhHomologySummand(rank, torsions)
 
 function Homology.compute(H::KhHomology{R}, k::Int) :: KhHomologySummand{R} where {R}
-    prep = !H.chain_reduction
-    Homology.compute_single(H, k; preprocess=prep)
+    Homology.compute_single(H, k; preprocess=false)
 end
 
 function Homology.asString(H::KhHomology) :: String

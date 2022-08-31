@@ -19,18 +19,20 @@ struct KhComplex{R} <: AbstractComplex{R, KhChainGenerator}
     end
 end
 
-function KhComplex(str::KhAlgStructure{R}, l::Link; chain_reduction=true, shift=true) where {R}
-    cube = KhCube(str, l)
-    degShift = if shift
+function KhComplex(str::KhAlgStructure{R}, l::Link; reduced=false, shifted=true, perform_reduction=true) where {R}
+    cube = KhCube(str, l; reduced=reduced)
+    degShift = if shifted
         (n₊, n₋) = signedCrossingNums(l)
-        (-n₋, n₊ - 2n₋)
+        (-n₋, n₊ - 2n₋ + (reduced ? 1 : 0))
     else
         (0, 0)
     end
 
     C = KhComplex(l, cube, degShift)
 
-    chain_reduction && reduce_all!(C)
+    if perform_reduction
+        reduce_all!(C)
+    end
 
     C
 end
