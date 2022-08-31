@@ -9,7 +9,7 @@ struct KhCubeVertex
     generators::Vector{KhChainGenerator}
 end
 
-function KhCubeVertex(l::Link, s::State, reduce_at::Union{Edge, Nothing}) :: KhCubeVertex
+function KhCubeVertex(l::Link, s::State, reduce_at::Union{Edge, Nothing}=nothing) :: KhCubeVertex
     circles = components(resolve(l, s))
     r = length(circles)
     generators = map(0 : 2^r - 1) do i in
