@@ -1,4 +1,5 @@
-using ..Links: Link, State, Component, resolve, components, crossingNum
+using ..Links: Link, State, Component, Edge, resolve, components, crossingNum, edges as l_edges, isEmpty
+using ..Utils: findfirst_elm, delete_where!
 
 # KhCubeVertex
 
@@ -8,7 +9,7 @@ struct KhCubeVertex
     generators::Vector{KhChainGenerator}
 end
 
-function KhCubeVertex(l::Link, s::State) :: KhCubeVertex
+function KhCubeVertex(l::Link, s::State, reduce_at::Union{Edge, Nothing}) :: KhCubeVertex
     circles = components(resolve(l, s))
     r = length(circles)
     generators = map(0 : 2^r - 1) do i in
@@ -16,6 +17,15 @@ function KhCubeVertex(l::Link, s::State) :: KhCubeVertex
         label = map(b -> (b == 0) ? X : I, bits)
         KhChainGenerator(s, label)
     end
+
+    if !isnothing(reduce_at)
+        e = reduce_at
+        i = findfirst(c -> e in c.edges, circles)
+        delete_where!(generators) do x 
+            x.label[i] == I
+        end
+    end
+
     KhCubeVertex(s, circles, generators)
 end
 
@@ -53,13 +63,17 @@ Base.:(==)(e1::KhCubeEdge, e2::KhCubeEdge) :: Bool =
 struct KhCube{R} 
     structure::KhAlgStructure{R}
     link::Link
+    reduced::Bool
+    reduce_at::Union{Edge, Nothing}
     vertices::Dict{State, KhCubeVertex}    # cache
     edges::Dict{State, Vector{KhCubeEdge}} # cache
 
-    KhCube(str::KhAlgStructure{R}, l::Link) where {R} = begin
+    KhCube(str::KhAlgStructure{R}, l::Link; reduced=false) where {R} = begin
+        @assert !reduced || iszero(str.t)
         vertices = Dict{State, KhCubeVertex}()
         edges = Dict{State, Vector{KhCubeEdge}}()
-        new{R}(str, l, vertices, edges)
+        reduce_at = reduced && !isEmpty(l) ? minimum(l_edges(l)) : nothing
+        new{R}(str, l, reduced, reduce_at, vertices, edges)
     end
 end
 
@@ -71,7 +85,7 @@ function vertex(cube::KhCube, u::State) :: KhCubeVertex
     @assert length(u) == dim(cube)
 
     get!(cube.vertices, u) do 
-        KhCubeVertex(cube.link, u)
+        KhCubeVertex(cube.link, u, cube.reduce_at)
     end
 end
 
@@ -104,10 +118,6 @@ function nextVertices(cube::KhCube, u::State) :: Vector{State}
     end
 end
 
-# TODO: move to Utils
-Base.findfirst(arr::AbstractArray{T}, elm::T) where {T} = 
-    findfirst( x -> x == elm, arr )
-
 function edgeSign(cube::KhCube, u::State, v::State) :: Int
     @assert length(u) == length(v) == dim(cube)
     @assert sum(u) + 1 == sum(v)
@@ -131,18 +141,18 @@ function edge(cube::KhCube, u::State, v::State) :: KhCubeEdge
     cᵥ = filter(c -> c ∉ Cᵤ, Cᵥ)
 
     return if (length(cᵤ), length(cᵥ)) == (2, 1)
-        i₁ = findfirst(Cᵤ, cᵤ[1])
-        i₂ = findfirst(Cᵤ, cᵤ[2])
-        j  = findfirst(Cᵥ, cᵥ[1])
+        i₁ = findfirst_elm(Cᵤ, cᵤ[1])
+        i₂ = findfirst_elm(Cᵤ, cᵤ[2])
+        j  = findfirst_elm(Cᵥ, cᵥ[1])
         if i₁ > i₂ 
             (i₁, i₂) = (i₂, i₁)
         end
         KhCubeMergeEdge(u, v, e, ((i₁, i₂), j))
 
     elseif (length(cᵤ), length(cᵥ)) == (1, 2)
-        i  = findfirst(Cᵤ, cᵤ[1])
-        j₁ = findfirst(Cᵥ, cᵥ[1])
-        j₂ = findfirst(Cᵥ, cᵥ[2])
+        i  = findfirst_elm(Cᵤ, cᵤ[1])
+        j₁ = findfirst_elm(Cᵥ, cᵥ[1])
+        j₂ = findfirst_elm(Cᵥ, cᵥ[2])
         if j₁ > j₂ 
             (j₁, j₂) = (j₂, j₁)
         end
