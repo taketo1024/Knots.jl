@@ -55,18 +55,19 @@ function generate_matrix(f, Gₖ::Vector{X}, Gₖ₊₁::Vector{X}, ::Type{R}) :
     sparse(Is, Js, Vs, m, n)
 end
 
-function reduce_all!(C::AbstractComplex)
+function reduce_all!(C::AbstractComplex; with_transform=false)
     for k in hDegRange(C)
-        reduce!(C, k)
+        reduce!(C, k; with_transform=with_transform)
     end
 end
 
-function reduce!(C::AbstractComplex, k::Int)
+function reduce!(C::AbstractComplex, k::Int; with_transform=false)
     @debug "reduce C[$k]."
 
     A = differential(C, k)
+    flags = (with_transform, false, false, with_transform) # P and Q⁻¹
 
-    (F, S, p, q) = snf_preprocess(A; flags=(false, false, false, false))
+    (F, S, p, q) = snf_preprocess(A; flags=flags)
     r = length(F.factors) # diagonal entries of units.
 
     if r == 0 
@@ -82,6 +83,13 @@ function reduce!(C::AbstractComplex, k::Int)
     drop_generators!(C, k₊₁, r, p)
     set_differential!(C, k, S)
 
+    if with_transform
+        Tₖ = F.T.Q⁻¹[r + 1 : nₖ, :]
+        Tₖ₊₁ = F.T.P[r + 1 : nₖ₊₁, :]
+        set_transform!(C, k, Tₖ)
+        set_transform!(C, k₊₁, Tₖ₊₁)
+    end
+
     @debug """cancelled $r pairs of generators.
       C[$k]: $nₖ -> $(nₖ - r)
       C[$k₊₁]: $nₖ₊₁ -> $(nₖ₊₁ - r)
@@ -94,4 +102,8 @@ end
 
 function set_differential!(C::AbstractComplex{R}, k::Int, A::AbstractMatrix{R}) where {R}
     throw(MethodError(set_differential!, (C, k, A)))
+end
+
+function set_transform!(C::AbstractComplex{R}, k::Int, T::AbstractMatrix{R}) where {R}
+    throw(MethodError(set_differential!, (C, k, T)))
 end
