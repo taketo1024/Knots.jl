@@ -241,6 +241,13 @@ function _crossingSigns(l::Link) :: Vector{Int}
     end
 end
 
+function edges(l::Link) :: Vector{Edge}
+    edges = reduce(l.data; init=Set{Edge}()) do res, x
+        union!(res, x.edges)
+    end
+    sort(collect(edges))
+end
+
 function components(l::Link) :: Vector{Component}
     comps = Vector{Component}()
     for x in l.data
