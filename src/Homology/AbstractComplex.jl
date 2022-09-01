@@ -12,6 +12,15 @@ function generators(C::AbstractComplex{R, X}, k::Int) :: Vector{X} where {R, X}
     throw(MethodError(generators, (C, k)))
 end
 
+function drop_generators!(C::AbstractComplex, k::Int, r::Int, p::Permutation)
+    throw(MethodError(drop_generators!, (C, k, r, p)))
+end
+
+# override if necessary
+function original_generators(C::AbstractComplex{R, X}, k::Int) :: Vector{X} where {R, X}
+    generators(C, k)
+end
+
 function differentialDegree(C::AbstractComplex) :: Int
     +1
 end
@@ -20,7 +29,16 @@ function differentiate(C::AbstractComplex{R, X}, k::Int, x::X) :: Vector{Pair{X,
     throw(MethodError(differentiate, (C, k, x)))
 end
 
+# override if necessary
 function differential(C::AbstractComplex{R, X}, k::Int) :: AbstractMatrix{R} where {R, X}
+    generate_differential(C, k)
+end
+
+function set_differential!(C::AbstractComplex{R}, k::Int, A::AbstractMatrix{R}) where {R}
+    throw(MethodError(set_differential!, (C, k, A)))
+end
+
+function generate_differential(C::AbstractComplex{R, X}, k::Int) :: AbstractMatrix{R} where {R, X}
     Gₖ   = generators(C, k)
     Gₖ₊₁ = generators(C, k + differentialDegree(C))
     generate_matrix(Gₖ, Gₖ₊₁, R) do x 
@@ -53,6 +71,14 @@ function generate_matrix(f, Gₖ::Vector{X}, Gₖ₊₁::Vector{X}, ::Type{R}) :
     end
     
     sparse(Is, Js, Vs, m, n)
+end
+
+function transform(::AbstractComplex{R}, ::Int) :: Union{AbstractMatrix{R}, Nothing} where {R}
+    nothing
+end
+
+function set_transform!(C::AbstractComplex{R}, k::Int, T::AbstractMatrix{R}) where {R}
+    throw(MethodError(set_differential!, (C, k, T)))
 end
 
 function reduce_all!(C::AbstractComplex; with_transform=false)
@@ -96,14 +122,22 @@ function reduce!(C::AbstractComplex, k::Int; with_transform=false)
     """
 end
 
-function drop_generators!(C::AbstractComplex, k::Int, r::Int, p::Permutation)
-    throw(MethodError(drop_generators!, (C, k, r, p)))
-end
+function vectorize(C::AbstractComplex{R, X}, k::Int, z::Dict{X, R}, ::Type{V}) :: V where {R, X, V <: AbstractVector{R}}
+    gens = original_generators(C, k)
+    n = length(gens)
+    gDict = Dict(gens[i] => i for i in 1 : n)
 
-function set_differential!(C::AbstractComplex{R}, k::Int, A::AbstractMatrix{R}) where {R}
-    throw(MethodError(set_differential!, (C, k, A)))
-end
+    v = fill(zero(R), n)
+    for (x, r) in z
+        i = gDict[x]
+        v[i] = r
+    end
 
-function set_transform!(C::AbstractComplex{R}, k::Int, T::AbstractMatrix{R}) where {R}
-    throw(MethodError(set_differential!, (C, k, T)))
+    v = V(v)
+    T = transform(C, k)
+    if !isnothing(T)
+        v = T * v
+    end
+
+    v
 end

@@ -11,11 +11,13 @@ struct KhComplex{R} <: AbstractComplex{R, KhChainGenerator}
 
     generators::Dict{Int, Vector{KhChainGenerator}} # cache
     differentials::Dict{Int, SparseMatrix{R}} # cache
+    transforms::Dict{Int, SparseMatrix{R}} # cache
 
     KhComplex(l::Link, cube::KhCube{R}, degShift::Tuple{Int, Int}) where {R} = begin
         generators = Dict{Int, Vector{KhChainGenerator}}()
         differentials = Dict{Int, SparseMatrix{R}}()
-        new{R}(l, cube, degShift, generators, differentials)
+        transforms = Dict{Int, SparseMatrix{R}}()
+        new{R}(l, cube, degShift, generators, differentials, transforms)
     end
 end
 
@@ -31,7 +33,7 @@ function KhComplex(str::KhAlgStructure{R}, l::Link; reduced=false, shifted=true,
     C = KhComplex(l, cube, degShift)
 
     if perform_reduction
-        reduce_all!(C)
+        reduce_all!(C; with_transform=true)
     end
 
     C
@@ -45,9 +47,13 @@ end
 
 function Homology.generators(C::KhComplex, k::Int) :: Vector{KhChainGenerator}
     get!(C.generators, k) do 
-        base = C.degShift[1] # <= 0
-        chain_generators(C.cube, k - base)
+        Homology.original_generators(C, k)
     end
+end
+
+function Homology.original_generators(C::KhComplex, k::Int) :: Vector{KhChainGenerator}
+    base = C.degShift[1] # <= 0
+    chain_generators(C.cube, k - base)
 end
 
 function Homology.drop_generators!(C::KhComplex, k::Int, r::Int, p::Permutation)
@@ -69,10 +75,21 @@ end
 
 function Homology.differential(C::KhComplex{R}, k::Int) :: SparseMatrix{R} where {R}
     get!(C.differentials, k) do 
-        invoke(Homology.differential, Tuple{AbstractComplex{R, KhChainGenerator}, Int}, C, k)
+        Homology.generate_differential(C, k)
     end
 end
 
 function Homology.set_differential!(C::KhComplex{R}, k::Int, A::SparseMatrix{R}) where {R}
     C.differentials[k] = A
+end
+
+function Homology.transform(C::KhComplex{R}, k::Int) :: Union{SparseMatrix{R}, Nothing} where {R}
+    get(C.transforms, k, nothing)
+end
+
+function Homology.set_transform!(C::KhComplex{R}, k::Int, T::SparseMatrix{R}) where {R}
+    if haskey(C.transforms, k)
+        T = T * C.transforms[k]
+    end
+    C.transforms[k] = T
 end
