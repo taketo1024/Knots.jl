@@ -82,17 +82,16 @@ function set_transform!(C::AbstractComplex{R}, k::Int, T::AbstractMatrix{R}) whe
 end
 
 function reduce_all!(C::AbstractComplex; with_transform=false)
+    flags = (with_transform, false, false, with_transform) # P and Q⁻¹
     for k in hDegRange(C)
-        reduce!(C, k; with_transform=with_transform)
+        reduce!(C, k; flags=flags)
     end
 end
 
-function reduce!(C::AbstractComplex, k::Int; with_transform=false)
-    @debug "reduce C[$k]."
+function reduce!(C::AbstractComplex, k::Int; flags=(false, false, false, false))
+    @debug "reduce C[$k]." flags = flags
 
     A = differential(C, k)
-    flags = (with_transform, false, false, with_transform) # P and Q⁻¹
-
     (F, S, p, q) = snf_preprocess(A; flags=flags)
     r = length(F.factors) # diagonal entries of units.
 
@@ -109,10 +108,13 @@ function reduce!(C::AbstractComplex, k::Int; with_transform=false)
     drop_generators!(C, k₊₁, r, p)
     set_differential!(C, k, S)
 
-    if with_transform
+    if flags[4] # Q⁻¹
         Tₖ = F.T.Q⁻¹[r + 1 : nₖ, :]
-        Tₖ₊₁ = F.T.P[r + 1 : nₖ₊₁, :]
         set_transform!(C, k, Tₖ)
+    end
+
+    if flags[1] # P
+        Tₖ₊₁ = F.T.P[r + 1 : nₖ₊₁, :]
         set_transform!(C, k₊₁, Tₖ₊₁)
     end
 
