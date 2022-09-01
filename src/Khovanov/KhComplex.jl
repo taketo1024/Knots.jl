@@ -9,19 +9,23 @@ struct KhComplex{R} <: AbstractComplex{R, KhChainGenerator}
     cube::KhCube{R}
     degShift::Tuple{Int, Int}
 
+    perform_reduction::Bool
+    with_tranform::Bool
+
     generators::Dict{Int, Vector{KhChainGenerator}} # cache
     differentials::Dict{Int, SparseMatrix{R}} # cache
     transforms::Dict{Int, SparseMatrix{R}} # cache
 
-    KhComplex(l::Link, cube::KhCube{R}, degShift::Tuple{Int, Int}) where {R} = begin
+    KhComplex(l::Link, cube::KhCube{R}, degShift::Tuple{Int, Int}; perform_reduction=true, with_transform=false) where {R} = begin
         generators = Dict{Int, Vector{KhChainGenerator}}()
         differentials = Dict{Int, SparseMatrix{R}}()
         transforms = Dict{Int, SparseMatrix{R}}()
-        new{R}(l, cube, degShift, generators, differentials, transforms)
+
+        new{R}(l, cube, degShift, perform_reduction, with_transform, generators, differentials, transforms)
     end
 end
 
-function KhComplex(str::KhAlgStructure{R}, l::Link; reduced=false, shifted=true, perform_reduction=true) where {R}
+function KhComplex(str::KhAlgStructure{R}, l::Link; reduced=false, shifted=true, perform_reduction=true, with_transform=false) where {R}
     cube = KhCube(str, l; reduced=reduced)
     degShift = if shifted
         (n₊, n₋) = signedCrossingNums(l)
@@ -30,10 +34,10 @@ function KhComplex(str::KhAlgStructure{R}, l::Link; reduced=false, shifted=true,
         (0, 0)
     end
 
-    C = KhComplex(l, cube, degShift)
+    C = KhComplex(l, cube, degShift; perform_reduction=perform_reduction, with_transform=with_transform)
 
     if perform_reduction
-        reduce_all!(C; with_transform=true)
+        reduce_all!(C; with_transform=with_transform)
     end
 
     C

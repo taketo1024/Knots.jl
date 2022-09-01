@@ -3,12 +3,32 @@ using ..Utils: superscript, count_occurrence
 
 abstract type AbstractHomologySummand{R} end
 
+function h_degree(s::AbstractHomologySummand) :: Int
+    throw(MethodError(h_degree, (s,)))
+end
+
+function parent(s::AbstractHomologySummand{R}) :: AbstractHomology{R} where {R}
+    throw(MethodError(parent, (s,)))
+end
+
 function rank(s::AbstractHomologySummand) :: Int
     throw(MethodError(rank, (s,)))
 end
 
 function torsions(s::AbstractHomologySummand{R}) :: Vector{R} where {R}
     throw(MethodError(torsions, (s,)))
+end
+
+function transform(s::AbstractHomologySummand{R}) :: AbstractMatrix{R} where {R}
+    throw(MethodError(transform, (s,)))
+end
+
+function vectorize(s::AbstractHomologySummand{R}, z::Dict{X, R}, v_type::Type{V}) :: V where {R, X, V <: AbstractVector{R}}
+    C = complex(parent(s))
+    k = h_degree(s)
+    v = vectorize(C, k, z, v_type)
+    T = transform(s)
+    T * v
 end
 
 function asString(s::AbstractHomologySummand{R}) :: String where {R}

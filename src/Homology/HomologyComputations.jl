@@ -1,3 +1,4 @@
+using SparseArrays: sparse_vcat, spzeros
 using ..Extensions: isunit
 using ..Matrix: SNF, snf
 
@@ -21,99 +22,46 @@ using ..Matrix: SNF, snf
 #    Hₖ = Ker(dₖ) / Im(dₖ₋₁)
 #       ≅ Rᶠ ⊕ Rᵗ/Im(Sₖ₋₁)
 
-function compute_single(H::AbstractHomology{R}, k::Int; preprocess=true) :: AbstractHomologySummand{R} where {R}
-    @debug "compute H[$k]"
+function compute_single(H::AbstractHomology{R}, k::Int; preprocess=true, with_transform=false) :: AbstractHomologySummand{R} where {R}
+    @debug "compute H[$k]" preprocess=preprocess with_transform=with_transform
 
     C = complex(H)
     deg = differentialDegree(C)
-    flags = (false, false, false, false) # transformation matrices are unnecessary.
+    p = preprocess
 
     nₖ = length(generators(C, k))
-    nₖ == 0 && return makeSummand(H, 0, R[])
+    nₖ == 0 && return makeSummand(H, k, 0, R[], spzeros(R, 0, 0))
 
     Aₖ₋₁ = differential(C, k - deg)
-    Aₖ   = differential(C, k)
 
-    Fₖ₋₁ = snf(Aₖ₋₁; preprocess=preprocess, flags=flags)
-    Fₖ   = snf(Aₖ;   preprocess=preprocess, flags=flags)
-
+    flgₖ₋₁ = (with_transform, true, false, false) # need Pₖ₋₁, Pₖ₋₁⁻¹
+    Fₖ₋₁ = snf(Aₖ₋₁; preprocess=p, flags=flgₖ₋₁)
     rₖ₋₁ = length(Fₖ₋₁.factors)
-    rₖ   = length(Fₖ.factors)
-    
-    fₖ = nₖ - rₖ₋₁ - rₖ
-    tors = filter(r -> !isunit(r), Fₖ₋₁.factors)
-
-    makeSummand(H, fₖ, tors)
-end
-
-function compute_incremental(H::AbstractHomology{R}, k::Int; previous=nothing) :: Tuple{AbstractHomologySummand{R}, Any} where {R}
-    C = complex(H)
-    deg = differentialDegree(C)
-    flags = (false, true, false, false) # only need P⁻¹
-
-    nₖ = length(generators(C, k))
-    nₖ == 0 && return (makeSummand(H, 0, R[]), nothing)
-
-    nₖ₋₁ = length(generators(C, k - deg))
-    if nₖ₋₁ > 0
-        Aₖ₋₁ = differential(C, k - deg)
-        Fₖ₋₁ = isnothing(previous) ? 
-            snf(Aₖ₋₁; flags=flags) :
-            previous
-
-        Pₖ₋₁⁻¹ = Fₖ₋₁.T.P⁻¹
-        eₖ₋₁ = Fₖ₋₁.factors
-        rₖ₋₁ = length(eₖ₋₁)
-        tors = filter(r -> !isunit(r), eₖ₋₁)
-    else
-        Pₖ₋₁⁻¹ = nothing # not to be acccessed
-        rₖ₋₁ = 0
-        tors = R[]
-    end
 
     Aₖ = differential(C, k)
-    Bₖ = (rₖ₋₁ > 0) ? 
-        Aₖ * Pₖ₋₁⁻¹[:, rₖ₋₁ + 1 : nₖ] : # restrict Aₖ to the complement of R^{rₖ₋₁}
-        Aₖ
+    Tₖ = Fₖ₋₁.T.P⁻¹[:, rₖ₋₁ + 1 : nₖ] # restricts Aₖ, size = (nₖ, nₖ - rₖ₋₁)
+    Bₖ = (rₖ₋₁ > 0) ? Aₖ * Tₖ : Aₖ
 
-    Fₖ = snf(Bₖ; flags=flags)
-    eₖ = Fₖ.factors
-    rₖ = length(eₖ)
-
+    flgₖ = (false, false, false, with_transform) # only need Qₖ⁻¹
+    Fₖ = snf(Bₖ; preprocess=p, flags=flgₖ)
+    rₖ = length(Fₖ.factors)
+    
     fₖ = nₖ - rₖ₋₁ - rₖ
 
-    (makeSummand(H, fₖ, tors), Fₖ)
-end
+    tors = filter(r -> !isunit(r), Fₖ₋₁.factors)
+    tₖ = length(tors)
 
-function compute_reverse_incremental(H::AbstractHomology{R}, k::Int; previous=nothing) :: Tuple{AbstractHomologySummand{R}, Any} where {R}
-    C = complex(H)
-    deg = differentialDegree(C)
-    flags=(false, false, false, true) # only need Q⁻¹
+    trans = if with_transform
+        Pₖ₋₁ = Fₖ₋₁.T.P                      # size = (nₖ, nₖ)
+        T₁ = Pₖ₋₁[rₖ₋₁ - tₖ + 1 : rₖ₋₁, :]    # tor part, size = (tₖ, nₖ)
+        T₂ = Pₖ₋₁[rₖ₋₁ + 1 : nₖ, :]           # domain of Bₖ, size = (nₖ - rₖ₋₁, nₖ)
+        Z  = Fₖ.T.Q⁻¹[rₖ + 1 : nₖ - rₖ₋₁, :]  # kernel of Bₖ, size = (fₖ, nₖ - rₖ₋₁)
+        T₃ = Z * T₂                          # free part, size = (fₖ, nₖ)
 
-    nₖ = length(generators(C, k))
-    nₖ == 0 && return (makeSummand(H, 0, R[]), nothing)
-
-    Fₖ = if isnothing(previous)
-        Aₖ = differential(H.complex, k)
-        snf(Aₖ; flags=flags) 
-    else 
-        previous
+        sparse_vcat(T₃, T₁)
+    else
+        spzeros(R, fₖ + tₖ, nₖ)
     end
 
-    rₖ = length(Fₖ.factors)
-    Qₖ⁻¹ = Fₖ.T.Q⁻¹
-
-    Aₖ₋₁ = differential(H.complex, k - deg)
-    Bₖ₋₁ = (rₖ < nₖ) ? 
-        Qₖ⁻¹[rₖ + 1 : nₖ, : ] * Aₖ₋₁ : # compose with projection to Zₖ
-        Aₖ₋₁
-    
-    Fₖ₋₁ = snf(Bₖ₋₁; flags=flags)
-    eₖ₋₁ = Fₖ₋₁.factors
-    rₖ₋₁ = length(eₖ₋₁)
-
-    fₖ = nₖ - rₖ₋₁ - rₖ
-    tors = filter(r -> !isunit(r), eₖ₋₁)
-
-    (makeSummand(H, fₖ, tors), Fₖ₋₁)
+    makeSummand(H, k, fₖ, tors, trans)
 end
