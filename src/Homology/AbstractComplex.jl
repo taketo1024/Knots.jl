@@ -135,8 +135,12 @@ function vectorize(C::AbstractComplex{R, X}, k::Int, z::Dict{X, R}, ::Type{V}) :
 
     v = V(v)
     T = transform(C, k)
+
     if !isnothing(T)
         v = T * v
+    elseif length(gens) != length(generators(C, k))
+        @warn "must set `with_tranform = true` to enable `vectorize` after chain reduction!"
+        v = V(fill(zero(R), length(generators(C, k))))
     end
 
     v
