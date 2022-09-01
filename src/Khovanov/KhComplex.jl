@@ -97,3 +97,7 @@ function Homology.set_transform!(C::KhComplex{R}, k::Int, T::SparseMatrix{R}) wh
     end
     C.transforms[k] = T
 end
+
+function Homology.vectorize(C::KhComplex{R}, k::Int, z::KhChain{R}) :: Vector{R} where {R}
+    Homology.vectorize(C, k, z.elements)
+end

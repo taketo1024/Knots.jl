@@ -51,3 +51,7 @@ Homology.transform(s::KhHomologySummand) = s.transform
 
 Homology.makeSummand(H::KhHomology{R}, h_degree::Int, rank::Int, torsions::Vector{R}, transform::SparseMatrix{R}) where {R} = 
     KhHomologySummand(H, h_degree, rank, torsions, transform)
+
+function Homology.vectorize(s::KhHomologySummand{R}, z::KhChain{R}) :: Vector{R} where {R}
+    Homology.vectorize(s, z.elements) 
+end
