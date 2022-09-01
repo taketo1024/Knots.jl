@@ -18,11 +18,11 @@ function s_c(l::Link, c::R; reduced=false) where {R}
     α = canonical_cycle(A, l)
     C = KhComplex(A, l; reduced=reduced, perform_reduction=false, with_transform=false)
 
-    reduce!(C,-2; with_transform=false)
-    reduce!(C,-1; with_transform=true)
-    reduce!(C, 0; with_transform=true)
-    reduce!(C, 1; with_transform=false)
-
+    reduce!(C, -2)
+    reduce!(C, -1; flags=(true, false, false, false)) # P
+    reduce!(C,  0; flags=(false, false, false, true)) # Q⁻¹
+    reduce!(C,  1)
+    
     H = KhHomology(C)
     H0 = compute_single(H, 0; preprocess=false, with_transform=true)
 
