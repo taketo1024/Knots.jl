@@ -44,7 +44,9 @@ function _solve_upper_trianguler!(U::SparseMatrix{R}, d::Vector{R}, b::Vector{R}
         for k in nzrange(U, j)
             i = rows[k]
             a = vals[k]
-            b[i] -= a * v
+            if !iszero(a)
+                b[i] -= a * v
+            end
         end
     end
 
