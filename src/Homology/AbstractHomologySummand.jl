@@ -23,6 +23,10 @@ function transform(s::AbstractHomologySummand{R}) :: AbstractMatrix{R} where {R}
     throw(MethodError(transform, (s,)))
 end
 
+function vectorize(s::AbstractHomologySummand{R}, z::Dict{X, R}) :: Vector{R} where {R, X}
+    vectorize(s, z, Vector{R})
+end
+
 function vectorize(s::AbstractHomologySummand{R}, z::Dict{X, R}, v_type::Type{V}) :: V where {R, X, V <: AbstractVector{R}}
     C = complex(parent(s))
     k = h_degree(s)

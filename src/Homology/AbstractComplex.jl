@@ -122,6 +122,10 @@ function reduce!(C::AbstractComplex, k::Int; with_transform=false)
     """
 end
 
+function vectorize(C::AbstractComplex{R, X}, k::Int, z::Dict{X, R}) :: Vector{R} where {R, X}
+    vectorize(C, k, z, Vector{R})
+end
+
 function vectorize(C::AbstractComplex{R, X}, k::Int, z::Dict{X, R}, ::Type{V}) :: V where {R, X, V <: AbstractVector{R}}
     gens = original_generators(C, k)
     n = length(gens)
