@@ -1,7 +1,8 @@
 export s_c
 
-using Knots.Links: Link, writhe, n_seifert_circles
-using Knots.Homology: vectorize, reduce!, compute_single
+using ..Links: Link, writhe, n_seifert_circles
+using ..Homology: vectorize, reduce!, compute_single
+using ..Extensions: symbol
 
 function divisibility(a::R, c::R) :: Int where {R}
     v = copy(a)
@@ -14,15 +15,20 @@ function divisibility(a::R, c::R) :: Int where {R}
 end
 
 function s_c(l::Link, c::R; reduced=false) where {R}
+    @debug "compute s_$c" L = l (R, c) = (R, c) reduced = reduced 
+
     A = KhAlgStructure(c, zero(R))
     α = canonical_cycle(A, l)
+
+    @debug "canonical cycle" α = α
+
     C = KhComplex(A, l; reduced=reduced, perform_reduction=false, with_transform=false)
 
     reduce!(C, -2)
     reduce!(C, -1; flags=(true, false, false, false)) # P
     reduce!(C,  0; flags=(false, false, false, true)) # Q⁻¹
     reduce!(C,  1)
-    
+
     H = KhHomology(C)
     H0 = compute_single(H, 0; preprocess=false, with_transform=true)
 
