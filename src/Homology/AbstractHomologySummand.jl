@@ -32,7 +32,16 @@ function vectorize(s::AbstractHomologySummand{R}, z::Dict{X, R}, v_type::Type{V}
     k = h_degree(s)
     v = vectorize(C, k, z, v_type)
     T = transform(s)
-    T * v
+    v = T * v
+
+    r = rank(s)
+    tors = torsions(s)
+
+    for i in 1:length(tors)
+        v[r + i] %= tors[i]
+    end
+
+    v
 end
 
 function asString(s::AbstractHomologySummand{R}) :: String where {R}
