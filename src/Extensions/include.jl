@@ -6,5 +6,6 @@ include("Int.jl")
 include("Rational.jl")
 include("GaloisFields.jl")
 include("Polynomials.jl")
+include("GaussInt.jl")
 
 end
