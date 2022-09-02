@@ -9,9 +9,29 @@ struct KhHomology{R} <: AbstractHomology{R}
     complex::KhComplex{R}
 end
 
-KhHomology(str::KhAlgStructure{R}, l::Link; reduced=false, shifted=true, perform_reduction=true, with_transform=false) where {R} = begin 
-    C = KhComplex(str, l; reduced=reduced, shifted=shifted, perform_reduction=perform_reduction, with_transform=with_transform)
-    KhHomology{R}(C)
+function KhHomology(l::Link, str::KhAlgStructure{R}; reduced=false, shifted=true, perform_reduction=true, with_transform=false) where {R}
+    KhHomology(
+        KhComplex(l, str; reduced=reduced, shifted=shifted, perform_reduction=perform_reduction, with_transform=with_transform)
+    )
+end
+
+function KhHomology(l::Link, name::String; reduced=false, shifted=true, perform_reduction=true, with_transform=false)
+    A = KhAlgStructure(name)
+    KhHomology(l, A; reduced=reduced, shifted=shifted, perform_reduction=perform_reduction, with_transform=with_transform)
+end
+
+function KhHomology(l::Link, h::R, t::R; reduced=false, shifted=true, perform_reduction=true, with_transform=false) where {R} 
+    A = KhAlgStructure(h, t)
+    KhHomology(l, A; reduced=reduced, shifted=shifted, perform_reduction=perform_reduction, with_transform=with_transform)
+end
+
+function KhHomology(l::Link, ::Type{R}; reduced=false, shifted=true, perform_reduction=true, with_transform=false) where {R} 
+    A = KhAlgStructure(zero(R), zero(R))
+    KhHomology(l, A; reduced=reduced, shifted=shifted, perform_reduction=perform_reduction, with_transform=with_transform)
+end
+
+function KhHomology(l::Link; reduced=false, shifted=true, perform_reduction=true, with_transform=false) where {R} 
+    KhHomology(l, Int; reduced=reduced, shifted=shifted, perform_reduction=perform_reduction, with_transform=with_transform)
 end
 
 Homology.complex(H::KhHomology) = 

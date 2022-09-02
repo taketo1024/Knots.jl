@@ -23,7 +23,7 @@ using Test
 
     @testset "empty" begin
         l = emptyLink 
-        cube = KhCube(A, l)
+        cube = KhCube(l, A)
         v = vertex(cube, Int[])
 
         @test length(v.generators) == 1
@@ -31,7 +31,7 @@ using Test
 
     @testset "unknot" begin
         l = unknot 
-        cube = KhCube(A, l)
+        cube = KhCube(l, A)
         v = vertex(cube, Int[])
 
         @test length(v.generators) == 2
@@ -39,7 +39,7 @@ using Test
 
     @testset "one-crossing" begin
         l = Link([0, 0, 1, 1])
-        cube = KhCube(A, l)
+        cube = KhCube(l, A)
         v0 = vertex(cube, [0])
         v1 = vertex(cube, [1])
 
@@ -53,7 +53,7 @@ using Test
 
     @testset "nextVertices" begin
         l = trefoil
-        cube = KhCube(A, l)
+        cube = KhCube(l, A)
         @test nextVertices(cube, [0, 0, 0]) == [[1, 0, 0], [0, 1, 0], [0, 0, 1]]
         @test nextVertices(cube, [1, 0, 0]) == [[1, 1, 0], [1, 0, 1]]
         @test nextVertices(cube, [1, 1, 0]) == [[1, 1, 1]]
@@ -62,21 +62,21 @@ using Test
 
     @testset "edge-merge" begin
         l = Link([0, 0, 1, 1])
-        cube = KhCube(A, l)
+        cube = KhCube(l, A)
         e = edge(cube, [0], [1])
         @test e == mergeEdge([0], [1], +1, ((1, 2), 1))
     end
 
     @testset "edge-split" begin
         l = Link([0, 1, 1, 0])
-        cube = KhCube(A, l)
+        cube = KhCube(l, A)
         e = edge(cube, [0], [1])
         @test e == splitEdge([0], [1], +1, (1, (1, 2)))
     end
 
     @testset "2-crossing-edge-sign" begin
         l = Link([0, 0, 1, 2], [1, 3, 3, 2])
-        cube = KhCube(A, l)
+        cube = KhCube(l, A)
         e1 = edgeSign(cube, [0, 0], [1, 0])
         e2 = edgeSign(cube, [0, 0], [0, 1])
         e3 = edgeSign(cube, [1, 0], [1, 1])
@@ -90,7 +90,7 @@ using Test
 
     @testset "2-crossing-edge" begin
         l = Link([0, 0, 1, 2], [1, 3, 3, 2])
-        cube = KhCube(A, l)
+        cube = KhCube(l, A)
         e1 = edge(cube, [0, 0], [1, 0])
         e2 = edge(cube, [0, 0], [0, 1])
         e3 = edge(cube, [1, 0], [1, 1])
@@ -104,7 +104,7 @@ using Test
 
     @testset "differential-merge" begin
         l = Link([0, 0, 1, 1])
-        cube = KhCube(A, l)
+        cube = KhCube(l, A)
 
         u = [0]
         v = [1]
@@ -119,7 +119,7 @@ using Test
 
     @testset "differential-split" begin
         l = Link([0, 1, 1, 0])
-        cube = KhCube(A, l)
+        cube = KhCube(l, A)
 
         u = [0]
         v = [1]
@@ -132,7 +132,7 @@ using Test
 
     @testset "cache" begin
         l = Link([0, 0, 1, 1])
-        cube = KhCube(A, l)
+        cube = KhCube(l, A)
 
         @test length(cube.vertices) == 0
 

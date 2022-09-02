@@ -25,8 +25,10 @@ struct KhComplex{R} <: AbstractComplex{R, KhChainGenerator}
     end
 end
 
-function KhComplex(str::KhAlgStructure{R}, l::Link; reduced=false, shifted=true, perform_reduction=true, with_transform=false) where {R}
-    cube = KhCube(str, l; reduced=reduced)
+function KhComplex(l::Link, str::KhAlgStructure{R}; reduced=false, shifted=true, perform_reduction=true, with_transform=false) where {R}
+    @debug "KhComplex" l str reduced
+    
+    cube = KhCube(l, str; reduced=reduced)
     degShift = if shifted
         (n₊, n₋) = signedCrossingNums(l)
         (-n₋, n₊ - 2n₋ + (reduced ? 1 : 0))
@@ -41,6 +43,24 @@ function KhComplex(str::KhAlgStructure{R}, l::Link; reduced=false, shifted=true,
     end
 
     C
+end
+
+function KhComplex(l::Link, name::String; reduced=false, shifted=true, perform_reduction=true, with_transform=false)
+    A = KhAlgStructure(name)
+    KhComplex(l, A; reduced=reduced, shifted=shifted, perform_reduction=perform_reduction, with_transform=with_transform)
+end
+
+function KhComplex(l::Link, h::R, t::R; reduced=false, shifted=true, perform_reduction=true, with_transform=false) where {R}
+    A = KhAlgStructure(h, t)
+    KhComplex(l, A; reduced=reduced, shifted=shifted, perform_reduction=perform_reduction, with_transform=with_transform)
+end
+
+function KhComplex(l::Link, ::Type{R}; reduced=false, shifted=true, perform_reduction=true, with_transform=false) where {R}
+    KhComplex(l, zero(R), zero(R); reduced=reduced, shifted=shifted, perform_reduction=perform_reduction, with_transform=with_transform)
+end
+
+function KhComplex(l::Link; reduced=false, shifted=true, perform_reduction=true, with_transform=false) where {R}
+    KhComplex(l, Int; reduced=reduced, shifted=shifted, perform_reduction=perform_reduction, with_transform=with_transform)
 end
 
 function Homology.hDegRange(C::KhComplex) :: UnitRange{Int}

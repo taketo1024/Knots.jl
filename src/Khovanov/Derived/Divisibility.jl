@@ -15,14 +15,14 @@ function divisibility(a::R, c::R) :: Int where {R}
 end
 
 function s_c(l::Link, c::R; reduced=false) where {R}
-    @debug "compute s_$c" L = l (R, c) = (R, c) reduced = reduced 
+    @debug "compute s_$c" l (R, c) reduced
 
     A = KhAlgStructure(c, zero(R))
-    α = canonical_cycle(A, l)
+    α = canonical_cycle(l, A)
 
-    @debug "canonical cycle" α = α
+    @debug "canonical cycle" α
 
-    C = KhComplex(A, l; reduced=reduced, perform_reduction=false, with_transform=false)
+    C = KhComplex(l, A; reduced=reduced, perform_reduction=false, with_transform=false)
 
     reduce!(C, -2)
     reduce!(C, -1; flags=(true, false, false, false)) # P

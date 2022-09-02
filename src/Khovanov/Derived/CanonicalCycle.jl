@@ -3,7 +3,7 @@ using ..Links: State, Component, crossings, edges as l_edges, resolve, canonical
 @enum SeifertCircleColor SeifertCircleColor_a SeifertCircleColor_b
 const SeifertCircleColors = (SeifertCircleColor_a, SeifertCircleColor_b)
 
-function canonical_cycle(A::KhAlgStructure{R}, l::Link; positive=true) :: KhChain{R} where {R}
+function canonical_cycle(l::Link, A::KhAlgStructure{R}; positive=true) :: KhChain{R} where {R}
     @assert iszero(A.t)
 
     s = canonical_state(l)
@@ -13,8 +13,8 @@ function canonical_cycle(A::KhAlgStructure{R}, l::Link; positive=true) :: KhChai
     _canonical_cycle(A, s, colors; positive=positive)
 end
 
-function canonical_cycles(A::KhAlgStructure{R}, l::Link) :: Tuple{KhChain{R}, KhChain{R}} where {R}
-    (canonical_cycle(A, l), canonical_cycle(A, l; positive=false))
+function canonical_cycles(l::Link, A::KhAlgStructure{R}) :: Tuple{KhChain{R}, KhChain{R}} where {R}
+    (canonical_cycle(l, A), canonical_cycle(A, l; positive=false))
 end
 
 function _color_circles(l::Link, circles::Vector{Component}) :: Vector{SeifertCircleColor}

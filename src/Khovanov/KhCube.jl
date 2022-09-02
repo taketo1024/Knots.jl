@@ -61,19 +61,19 @@ Base.:(==)(e1::KhCubeEdge, e2::KhCubeEdge) :: Bool =
 # KhCube
 
 struct KhCube{R} 
-    structure::KhAlgStructure{R}
     link::Link
+    structure::KhAlgStructure{R}
     reduced::Bool
     reduce_at::Union{Edge, Nothing}
     vertices::Dict{State, KhCubeVertex}    # cache
     edges::Dict{State, Vector{KhCubeEdge}} # cache
 
-    KhCube(str::KhAlgStructure{R}, l::Link; reduced=false) where {R} = begin
+    KhCube(l::Link, str::KhAlgStructure{R}; reduced=false) where {R} = begin
         @assert !reduced || iszero(str.t)
         vertices = Dict{State, KhCubeVertex}()
         edges = Dict{State, Vector{KhCubeEdge}}()
         reduce_at = reduced && !isEmpty(l) ? minimum(l_edges(l)) : nothing
-        new{R}(str, l, reduced, reduce_at, vertices, edges)
+        new{R}(l, str, reduced, reduce_at, vertices, edges)
     end
 end
 

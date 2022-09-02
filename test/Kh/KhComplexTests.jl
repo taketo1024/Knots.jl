@@ -10,7 +10,7 @@ using Test
 
     @testset "empty" begin
         l = emptyLink
-        C = KhComplex(A, l; perform_reduction=false)
+        C = KhComplex(l, A; perform_reduction=false)
 
         @test C.degShift == (0, 0)
         @test hDegRange(C) == 0:0
@@ -20,7 +20,7 @@ using Test
 
     @testset "unknot" begin
         l = unknot
-        C = KhComplex(A, l; perform_reduction=false)
+        C = KhComplex(l, A; perform_reduction=false)
 
         @test C.degShift == (0, 0)
         @test hDegRange(C) == 0:0
@@ -30,7 +30,7 @@ using Test
 
     @testset "pos-twist" begin
         l  = Link([0, 0, 1, 1])
-        C = KhComplex(A, l; perform_reduction=false)
+        C = KhComplex(l, A; perform_reduction=false)
 
         @test C.degShift == (0, 1)
         @test hDegRange(C) == 0:1
@@ -41,7 +41,7 @@ using Test
 
     @testset "neg-twist" begin
         l  = Link([0, 1, 1, 0])
-        C = KhComplex(A, l; perform_reduction=false)
+        C = KhComplex(l, A; perform_reduction=false)
 
         @test C.degShift == (-1, -2)
         @test hDegRange(C) == -1:0
@@ -52,7 +52,7 @@ using Test
 
     @testset "pos-neg-twist" begin
         l = Link([0, 0, 1, 2], [1, 3, 3, 2])
-        C = KhComplex(A, l; perform_reduction=false)
+        C = KhComplex(l, A; perform_reduction=false)
 
         @test C.degShift == (-1, -1)
         @test hDegRange(C) == -1:1
@@ -70,7 +70,7 @@ using Test
 
     @testset "hopfLink" begin
         l = hopfLink
-        C = KhComplex(A, l; perform_reduction=false)
+        C = KhComplex(l, A; perform_reduction=false)
 
         @test C.degShift == (-2, -4)
         @test hDegRange(C) == -2:0
@@ -88,7 +88,7 @@ using Test
 
     @testset "trefoil" begin
         l = mirror(trefoil)
-        C = KhComplex(A, l; perform_reduction=false)
+        C = KhComplex(l, A; perform_reduction=false)
 
         @test C.degShift == (0, 3)
         @test hDegRange(C) == 0:3

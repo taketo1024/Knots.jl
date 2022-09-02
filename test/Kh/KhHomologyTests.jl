@@ -7,7 +7,7 @@ using Test
     @testset "emptyLink" begin
         l = emptyLink
         A = KhAlgStructure("Z-Kh")
-        H = KhHomology(A, l)
+        H = KhHomology(l, A)
 
         @test iszero(H[-1])
 
@@ -20,7 +20,7 @@ using Test
     @testset "unknot" begin
         l = unknot
         A = KhAlgStructure("Z-Kh")
-        H = KhHomology(A, l)
+        H = KhHomology(l, A)
 
         @test iszero(H[-1])
 
@@ -33,7 +33,7 @@ using Test
     @testset "unknot-RM1" begin
         l = Link([1,2,2,1])
         A = KhAlgStructure("Z-Kh")
-        H = KhHomology(A, l)
+        H = KhHomology(l, A)
 
         @test iszero(H[-1])
 
@@ -46,7 +46,7 @@ using Test
     @testset "unknot-RM2" begin
         l = Link([1,4,2,1], [2,4,3,3])
         A = KhAlgStructure("Z-Kh")
-        H = KhHomology(A, l)
+        H = KhHomology(l, A)
 
         @test iszero(H[-1])
 
@@ -59,7 +59,7 @@ using Test
     @testset "trefoil" begin
         l = trefoil
         A = KhAlgStructure("Z-Kh")
-        H = KhHomology(A, l)
+        H = KhHomology(l, A)
 
         @test H[-3].rank == 1
         @test H[-3].torsions == []
@@ -77,7 +77,7 @@ using Test
     @testset "trefoil-mirror" begin
         l = mirror(trefoil)
         A = KhAlgStructure("Z-Kh")
-        H = KhHomology(A, l)
+        H = KhHomology(l, A)
 
         @test H[0].rank == 2
         @test H[0].torsions == []
@@ -95,7 +95,7 @@ using Test
     @testset "figure8" begin
         l = figure8
         A = KhAlgStructure("Z-Kh")
-        H = KhHomology(A, l)
+        H = KhHomology(l, A)
 
         @test H[-2].rank == 1
         @test H[-2].torsions == []
@@ -116,7 +116,7 @@ using Test
     @testset "Q-trefoil" begin
         l = trefoil
         A = KhAlgStructure("Q-Kh")
-        H = KhHomology(A, l)
+        H = KhHomology(l, A)
 
         @test H[-3].rank == 1
         @test H[-3].torsions == []
@@ -134,7 +134,7 @@ using Test
     @testset "F2-trefoil" begin
         l = trefoil
         A = KhAlgStructure("F2-Kh")
-        H = KhHomology(A, l)
+        H = KhHomology(l, A)
 
         @test H[-3].rank == 2
         @test H[-3].torsions == []
@@ -152,7 +152,7 @@ using Test
     @testset "F3-trefoil" begin
         l = trefoil
         A = KhAlgStructure("F3-Kh")
-        H = KhHomology(A, l)
+        H = KhHomology(l, A)
 
         @test H[-3].rank == 1
         @test H[-3].torsions == []
@@ -170,7 +170,7 @@ using Test
     @testset "Q[h]-trefoil" begin
         l = trefoil
         A = KhAlgStructure("Q[h]-bigraded")
-        H = KhHomology(A, l)
+        H = KhHomology(l, A)
 
         h = A.h
 
@@ -190,7 +190,7 @@ using Test
     @testset "F2[h]-trefoil" begin
         l = trefoil
         A = KhAlgStructure("F2[h]-bigraded")
-        H = KhHomology(A, l)
+        H = KhHomology(l, A)
 
         h = A.h
 
@@ -210,7 +210,7 @@ using Test
     @testset "F3[h]-trefoil" begin
         l = trefoil
         A = KhAlgStructure("F3[h]-bigraded")
-        H = KhHomology(A, l)
+        H = KhHomology(l, A)
 
         h = A.h
 
@@ -230,7 +230,7 @@ using Test
     @testset "Q[t]-trefoil" begin
         l = trefoil
         A = KhAlgStructure("Q[t]-bigraded")
-        H = KhHomology(A, l)
+        H = KhHomology(l, A)
 
         t = A.t
 
@@ -250,7 +250,7 @@ using Test
     @testset "F2[t]-trefoil" begin
         l = trefoil
         A = KhAlgStructure("F2[t]-bigraded")
-        H = KhHomology(A, l)
+        H = KhHomology(l, A)
 
         t = A.t
 
@@ -270,7 +270,7 @@ using Test
     @testset "F3[h]-trefoil" begin
         l = trefoil
         A = KhAlgStructure("F3[t]-bigraded")
-        H = KhHomology(A, l)
+        H = KhHomology(l, A)
 
         t = A.t
 
