@@ -50,7 +50,7 @@ function _schur_complement_U(A::SparseMatrix{R}, r::Int, flags) where {R}
         sparse_hvcat(
             (2, 2), 
             Uinv, O(r, m - r),
-            -Y * Uinv, I(m - r)
+            -(Y * Uinv), I(m - r)
         ) : nothing
 
     Pinv = flags[2] ? 
@@ -63,7 +63,7 @@ function _schur_complement_U(A::SparseMatrix{R}, r::Int, flags) where {R}
     Q = flags[3] ? 
         sparse_hvcat(
             (2, 2), 
-            I(r), -Uinv * X,
+            I(r), -(Uinv * X),
             O(n - r, r), I(n - r)
         ) : nothing
 
