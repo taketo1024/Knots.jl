@@ -1,32 +1,12 @@
-using Knots
-using Knots.Links
-using Knots.Khovanov
-using Knots.Homology: compute_single, compute_incremental, compute_reverse_incremental
+using Knots.Links, Knots.Khovanov
 
-function run(name::String, str::String="Kh"; mode::Int=1, only_zero::Bool=false)
-    println("run: $name, mode: $mode")
-    l = Link(name)
-    A = KhAlgStructure(str)
-    H = KhHomology(A, l)
-    prev = nothing
-    range = only_zero ? 
-        (0:0) : 
-        (mode in [1, 2]) ? hDegRange(H) : reverse(hDegRange(H))
+ENV["JULIA_DEBUG"] = "Knots"
 
-    for i in range
-        if mode == 1
-            Hi = compute_single(H, i)
-        elseif mode == 2
-            Hi, prev = compute_incremental(H, i; previous=prev)
-        elseif mode == 3
-            Hi, prev = compute_reverse_incremental(H, i; previous=prev)
-        end
-        println("H[$i] = ", Hi)
-    end
-end
+L = trefoil
+c = 2
+r = true
 
-@show Threads.nthreads()
-@time run("3_1")
+@time s = s_c(L, c; reduced=r)
+@show s
 
 nothing
-
