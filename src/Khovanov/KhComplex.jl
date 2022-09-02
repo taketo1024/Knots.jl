@@ -9,28 +9,36 @@ struct KhComplex{R} <: AbstractComplex{R, KhChainGenerator}
     cube::KhCube{R}
     degShift::Tuple{Int, Int}
 
+    perform_reduction::Bool
+    with_tranform::Bool
+
     generators::Dict{Int, Vector{KhChainGenerator}} # cache
     differentials::Dict{Int, SparseMatrix{R}} # cache
+    transforms::Dict{Int, SparseMatrix{R}} # cache
 
-    KhComplex(l::Link, cube::KhCube{R}, degShift::Tuple{Int, Int}) where {R} = begin
+    KhComplex(l::Link, cube::KhCube{R}, degShift::Tuple{Int, Int}; perform_reduction=true, with_transform=false) where {R} = begin
         generators = Dict{Int, Vector{KhChainGenerator}}()
         differentials = Dict{Int, SparseMatrix{R}}()
-        new{R}(l, cube, degShift, generators, differentials)
+        transforms = Dict{Int, SparseMatrix{R}}()
+
+        new{R}(l, cube, degShift, perform_reduction, with_transform, generators, differentials, transforms)
     end
 end
 
-function KhComplex(str::KhAlgStructure{R}, l::Link; chain_reduction=true, shift=true) where {R}
-    cube = KhCube(str, l)
-    degShift = if shift
+function KhComplex(str::KhAlgStructure{R}, l::Link; reduced=false, shifted=true, perform_reduction=true, with_transform=false) where {R}
+    cube = KhCube(str, l; reduced=reduced)
+    degShift = if shifted
         (n₊, n₋) = signedCrossingNums(l)
-        (-n₋, n₊ - 2n₋)
+        (-n₋, n₊ - 2n₋ + (reduced ? 1 : 0))
     else
         (0, 0)
     end
 
-    C = KhComplex(l, cube, degShift)
+    C = KhComplex(l, cube, degShift; perform_reduction=perform_reduction, with_transform=with_transform)
 
-    chain_reduction && reduce_all!(C)
+    if perform_reduction
+        reduce_all!(C; with_transform=with_transform)
+    end
 
     C
 end
@@ -43,9 +51,13 @@ end
 
 function Homology.generators(C::KhComplex, k::Int) :: Vector{KhChainGenerator}
     get!(C.generators, k) do 
-        base = C.degShift[1] # <= 0
-        chain_generators(C.cube, k - base)
+        Homology.original_generators(C, k)
     end
+end
+
+function Homology.original_generators(C::KhComplex, k::Int) :: Vector{KhChainGenerator}
+    base = C.degShift[1] # <= 0
+    chain_generators(C.cube, k - base)
 end
 
 function Homology.drop_generators!(C::KhComplex, k::Int, r::Int, p::Permutation)
@@ -67,10 +79,25 @@ end
 
 function Homology.differential(C::KhComplex{R}, k::Int) :: SparseMatrix{R} where {R}
     get!(C.differentials, k) do 
-        invoke(Homology.differential, Tuple{AbstractComplex{R, KhChainGenerator}, Int}, C, k)
+        Homology.generate_differential(C, k)
     end
 end
 
 function Homology.set_differential!(C::KhComplex{R}, k::Int, A::SparseMatrix{R}) where {R}
     C.differentials[k] = A
+end
+
+function Homology.transform(C::KhComplex{R}, k::Int) :: Union{SparseMatrix{R}, Nothing} where {R}
+    get(C.transforms, k, nothing)
+end
+
+function Homology.set_transform!(C::KhComplex{R}, k::Int, T::SparseMatrix{R}) where {R}
+    if haskey(C.transforms, k)
+        T = T * C.transforms[k]
+    end
+    C.transforms[k] = T
+end
+
+function Homology.vectorize(C::KhComplex{R}, k::Int, z::KhChain{R}) :: Vector{R} where {R}
+    Homology.vectorize(C, k, z.elements)
 end

@@ -41,7 +41,7 @@ function asString(ch::KhChain)
     if isempty(ch.elements)
         "0"
     else
-        join( map( p -> "$(p[2])$(p[1])", collect(ch.elements) ), " + ")
+        join( map( p -> "$(p[2])($(p[1]))", collect(ch.elements) ), " + ")
     end
 end
 

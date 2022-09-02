@@ -19,9 +19,3 @@ function superscript(i::Int) :: String
     end
     join(c)
 end
-
-function count_occurrence(arr::Vector{X}) :: Dict{X, Int} where {X}
-    reduce(arr; init=Dict{X, Int}()) do res, x
-        push!(res, x => get!(res, x, 0) + 1)
-    end
-end

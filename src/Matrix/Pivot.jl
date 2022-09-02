@@ -23,9 +23,10 @@ mutable struct Pivot{R}
     colWeight::Vector{Int}         # col -> weight
     candidates::Vector{Set{Int}}   # row -> Set(cols)
     pivots::OrderedDict{Int, Int}  # col -> row
+    max_pivot::Int
 end
 
-Pivot(A::SparseMatrix{R}) where {R} = begin
+Pivot(A::SparseMatrix{R}; max_pivot=30000) where {R} = begin
     (m, n) = size(A)
     entries = map( _ -> Int[], 1:m)
     rowHead   = fill(0, m)
@@ -33,6 +34,7 @@ Pivot(A::SparseMatrix{R}) where {R} = begin
     colWeight = fill(0, n)
     candidates = map( _ -> Set{Int}(), 1:m)
     pivots = OrderedDict{Int, Int}()
+    max_pivot = minimum([m, n, max_pivot])
 
     for (i, j, a) in zip(findnz(A)...)
         iszero(a) && continue
@@ -48,7 +50,7 @@ Pivot(A::SparseMatrix{R}) where {R} = begin
         end
     end
 
-    Pivot{R}((m, n), entries, rowHead, rowWeight, colWeight, candidates, pivots)
+    Pivot{R}((m, n), entries, rowHead, rowWeight, colWeight, candidates, pivots, max_pivot)
 end
 
 function pivot(A::SparseMatrix{R}) :: Pivot{R} where {R}
@@ -99,7 +101,7 @@ function occupiedCols(piv::Pivot) :: Set{Int}
 end
 
 function findPivots!(piv::Pivot)
-    @debug "find pivots, A = size$(piv.size)"
+    @debug "find pivots" A = piv.size
 
     findFLPivots!(piv)
     findFLColumnPivots!(piv)
@@ -123,6 +125,10 @@ function findFLPivots!(piv::Pivot)
         end
     end
 
+    if length(pivots) > piv.max_pivot 
+        pivots = OrderedDict(collect(pivots)[1 : piv.max_pivot])
+    end
+
     for (j, i) in pivots
         setPivot!(piv, i, j)
     end
@@ -133,7 +139,7 @@ end
 
 function findFLColumnPivots!(piv::Pivot)
     before = length(piv.pivots)
-    (before == min(piv.size...)) && return
+    (before >= piv.max_pivot) && return
 
     remain = remainingRows(piv)
     occupied = occupiedCols(piv) 
@@ -156,6 +162,10 @@ function findFLColumnPivots!(piv::Pivot)
 
         setPivot!(piv, i, j)
         union!(occupied, piv.entries[i])
+
+        if length(piv.pivots) >= piv.max_pivot
+            break
+        end
     end
 
     npiv = length(piv.pivots)
@@ -164,7 +174,7 @@ end
 
 function findCycleFreePivots!(piv::Pivot) :: Union{Int, Nothing}
     before = length(piv.pivots)
-    (before == min(piv.size...)) && return
+    (before >= piv.max_pivot) && return
 
     remain = remainingRows(piv)
 
@@ -184,6 +194,10 @@ function findCycleFreePivots_s!(piv::Pivot, remain::Vector{Int}) :: Union{Int, N
         j = findCycleFreePivot(piv, i)
         isnothing(j) && continue
         setPivot!(piv, i, j)
+
+        if length(piv.pivots) >= piv.max_pivot
+            break
+        end
     end
 end
 

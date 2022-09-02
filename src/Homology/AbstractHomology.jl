@@ -6,8 +6,8 @@ function complex(H::AbstractHomology{R}) :: AbstractComplex{R} where {R}
 end
 
 # must override 
-function makeSummand(H::AbstractHomology{R}, rank::Int, torsions::Vector{R}) :: AbstractHomologySummand{R} where {R}
-    throw(MethodError(_makeSummand, (H, rank, torsions)))
+function makeSummand(H::AbstractHomology{R}, k::Int, rank::Int, torsions::Vector{R}) :: AbstractHomologySummand{R} where {R}
+    throw(MethodError(_makeSummand, (H, k, rank, torsions)))
 end
 
 function hDegRange(H::AbstractHomology) :: UnitRange{Int}

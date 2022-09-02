@@ -4,24 +4,37 @@ using Permutations
 const Flags4 = Tuple{Bool, Bool, Bool, Bool}
 
 struct Transform{M<:AbstractMatrix}
-    P  ::M
-    P⁻¹::M
-    Q  ::M
-    Q⁻¹::M
+    P  ::Union{M, Nothing}
+    P⁻¹::Union{M, Nothing}
+    Q  ::Union{M, Nothing}
+    Q⁻¹::Union{M, Nothing}
+    flags::Flags4
     
-    function Transform(P::M, P⁻¹::M, Q::M, Q⁻¹::M) where {M<:AbstractMatrix}
-        @assert size(P)[1] == size(P)[2]
-        @assert size(P⁻¹)[1] == size(P⁻¹)[2]
-        @assert size(Q)[1] == size(Q)[2]
-        @assert size(Q⁻¹)[1] == size(Q⁻¹)[2]
-        new{M}(P, P⁻¹, Q, Q⁻¹)
+    function Transform(::Type{M}, P::Union{M, Nothing}, P⁻¹::Union{M, Nothing}, Q::Union{M, Nothing}, Q⁻¹::Union{M, Nothing}) where {M<:AbstractMatrix}
+        flags = (!isnothing(P), !isnothing(P⁻¹), !isnothing(Q), !isnothing(Q⁻¹))
+
+        @assert !flags[1] || size(P)[1]   == size(P)[2]
+        @assert !flags[2] || size(P⁻¹)[1] == size(P⁻¹)[2]
+        @assert !flags[3] || size(Q)[1]   == size(Q)[2]
+        @assert !flags[4] || size(Q⁻¹)[1] == size(Q⁻¹)[2]
+
+        @assert !(flags[1] && flags[2]) || size(P) == size(P⁻¹)
+        @assert !(flags[3] && flags[4]) || size(Q) == size(Q⁻¹)
+
+        new{M}(P, P⁻¹, Q, Q⁻¹, flags)
     end
 end
 
-function identity_transform(::Type{M}, size::Tuple{Int, Int}) where {R, M<:SparseMatrix{R}}
+function identity_transform(m_type::Type{M}, size::Tuple{Int, Int}; flags=(true, true, true, true)) where {R, M<:SparseMatrix{R}}
     (m, n) = size
     I(k) = sparse_identity_matrix(R, k)
-    Transform(I(m), I(m), I(n), I(n))
+    Transform(
+        m_type,
+        flags[1] ? I(m) : nothing, 
+        flags[2] ? I(m) : nothing, 
+        flags[3] ? I(n) : nothing, 
+        flags[4] ? I(n) : nothing 
+    )
 end
 
 function Base.iterate(T::Transform, i = 1)
@@ -38,38 +51,62 @@ function Base.iterate(T::Transform, i = 1)
     end
 end
 
-function (⊕)(T₁::Transform{M}, T₂::Transform{M}) :: Transform{M} where {M} 
+function (⊕)(T₁::Transform{M}, T₂::Transform{M}) :: Transform{M} where {M <: SparseMatrix} 
     block_diagonal(T₁, T₂)
 end
 
-function Base.:*(T₁::Transform{M}, T₂::Transform{M}) :: Transform{M} where {M} 
+function Base.:*(T₁::Transform{M}, T₂::Transform{M}) :: Transform{M} where {M <: SparseMatrix} 
     compose(T₁, T₂)
 end
 
-function block_diagonal(T₁::Transform{M}, T₂::Transform{M}) :: Transform{M} where {M} 
-    P   = blockdiag(T₁.P,   T₂.P)
-    P⁻¹ = blockdiag(T₁.P⁻¹, T₂.P⁻¹)
-    Q   = blockdiag(T₁.Q,   T₂.Q)
-    Q⁻¹ = blockdiag(T₁.Q⁻¹, T₂.Q⁻¹) 
-    Transform(P, P⁻¹, Q, Q⁻¹)
+function block_diagonal(T₁::Transform{M}, T₂::Transform{M}) :: Transform{M} where {M <: SparseMatrix} 
+    P   = (T₁.flags[1] && T₂.flags[1]) ? 
+        blockdiag(T₁.P, T₂.P) : 
+        nothing
+    P⁻¹ = (T₁.flags[2] && T₂.flags[2]) ? 
+        blockdiag(T₁.P⁻¹, T₂.P⁻¹) : 
+        nothing
+    Q   = (T₁.flags[3] && T₂.flags[3]) ? 
+        blockdiag(T₁.Q, T₂.Q) : 
+        nothing
+    Q⁻¹ = (T₁.flags[4] && T₂.flags[4]) ? 
+        blockdiag(T₁.Q⁻¹, T₂.Q⁻¹) : 
+        nothing
+    Transform(M, P, P⁻¹, Q, Q⁻¹)
 end
 
 # P₁ A Q₁ = B, 
 # P₂ B Q₂ = C 
 # -> P₂ P₁ A Q₁ Q₂ = C
-function compose(T₁::Transform{M}, T₂::Transform{M}) :: Transform{M} where {M} 
-    P   = T₂.P   * T₁.P
-    P⁻¹ = T₁.P⁻¹ * T₂.P⁻¹
-    Q   = T₁.Q   * T₂.Q 
-    Q⁻¹ = T₂.Q⁻¹ * T₁.Q⁻¹
-    Transform(P, P⁻¹, Q, Q⁻¹)
+function compose(T₁::Transform{M}, T₂::Transform{M}) :: Transform{M} where {M <: SparseMatrix} 
+    P   = (T₁.flags[1] && T₂.flags[1]) ? 
+        T₂.P * T₁.P : 
+        nothing
+    P⁻¹ = (T₁.flags[2] && T₂.flags[2]) ? 
+        T₁.P⁻¹ * T₂.P⁻¹ : 
+        nothing
+    Q   = (T₁.flags[3] && T₂.flags[3]) ? 
+        T₁.Q   * T₂.Q :
+        nothing
+    Q⁻¹ = (T₁.flags[4] && T₂.flags[4]) ? 
+        T₂.Q⁻¹ * T₁.Q⁻¹ :
+        nothing
+    Transform(M, P, P⁻¹, Q, Q⁻¹)
 end
 
 # p⁻¹ B q = (p⁻¹P) A (Qq)
-function permute(T::Transform{M}, p::Permutation, q::Permutation) :: Transform{M} where {M} 
-    P   = permute_col(T.P, inv(p))
-    P⁻¹ = permute_row(T.P⁻¹, inv(p))
-    Q   = permute_row(T.Q, inv(q))
-    Q⁻¹ = permute_col(T.Q⁻¹, inv(q))
-    Transform(P, P⁻¹, Q, Q⁻¹)
+function permute(T::Transform{M}, p::Permutation, q::Permutation) :: Transform{M} where {M <: SparseMatrix} 
+    P   = T.flags[1] ?
+        permute_col(T.P, inv(p)) : 
+        nothing
+    P⁻¹ = T.flags[2] ?
+        permute_row(T.P⁻¹, inv(p)) : 
+        nothing
+    Q   = T.flags[3] ?
+        permute_row(T.Q, inv(q)) : 
+        nothing
+    Q⁻¹ = T.flags[4] ?
+        permute_col(T.Q⁻¹, inv(q)) : 
+        nothing
+    Transform(M, P, P⁻¹, Q, Q⁻¹)
 end

@@ -5,7 +5,7 @@ using ..Extensions: symbol
 
 @enum KhAlgGenerator I X
 
-function degree(x::KhAlgGenerator) 
+function q_degree(x::KhAlgGenerator) 
     (x == I) ? 0 : -2
 end
 

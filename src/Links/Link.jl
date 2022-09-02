@@ -153,6 +153,10 @@ function Link(pdCode::Vector{Int}...)
     Link(collect(pdCode))
 end
 
+function Link(pdCode::Tuple{Int, Int, Int, Int}...)
+    Link(map(t -> collect(t), collect(pdCode)))
+end
+
 function isEmpty(l::Link) :: Bool
     isempty(l.data)
 end
@@ -239,6 +243,13 @@ function _crossingSigns(l::Link) :: Vector{Int}
     map(crossings(l)) do x
         result[x]
     end
+end
+
+function edges(l::Link) :: Vector{Edge}
+    edges = reduce(l.data; init=Set{Edge}()) do res, x
+        union!(res, x.edges)
+    end
+    sort(collect(edges))
 end
 
 function components(l::Link) :: Vector{Component}
@@ -330,6 +341,17 @@ function resolve(l::Link, s::State) :: Link
         end
     end
     Link(data)
+end
+
+function canonical_state(l::Link) :: State
+    map(_crossingSigns(l)) do e
+        e > 0 ? 0 : 1
+    end
+end
+
+function n_seifert_circles(l::Link) :: Int
+    s = canonical_state(l)
+    length(components(resolve(l, s)))
 end
 
 Base.show(io::IO, l::Link) = print(io, "Link($(join(l.data, ", ")))")

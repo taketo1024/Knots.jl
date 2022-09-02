@@ -27,17 +27,17 @@ function Base.iterate(S::SNF{R}, i = 0) where {R}
     end
 end
 
-function snf_zero(A::SparseMatrix{R}) :: SNF{R} where {R}
-    SNF(R[], identity_transform(SparseMatrix{R}, size(A)))
+function snf_zero(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where {R}
+    SNF(R[], identity_transform(SparseMatrix{R}, size(A); flags=flags))
 end
 
 function snf(A::SparseMatrix{R}; preprocess=true, flags::Flags4=(true, true, true, true)) :: SNF{R} where {R}
     d_threshold = 0.5
 
     if iszero(A)
-        snf_zero(A)
+        snf_zero(A; flags=flags)
     elseif preprocess
-        snf_with_preprocess(A; flags=flags)
+        snf_preprocess(A; flags=flags)
     elseif density(A) < d_threshold
         snf_sparse(A; flags=flags)
     else
@@ -45,26 +45,28 @@ function snf(A::SparseMatrix{R}; preprocess=true, flags::Flags4=(true, true, tru
     end
 end
 
-function snf_with_preprocess(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where {R}
-    (F, S) = snf_preprocess(A; flags=flags)
+function snf_preprocess(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where {R}
+    @debug "snf-preprocess" A = size(A) density = density(A)
+    
+    (F, S) = pivotal_elim(A; flags=flags)
     
     if !iszero(S)
         F₂ = snf(S; preprocess=false, flags=flags)
-        snf_compose(F, F₂)
+        snf_compose(F, F₂; flags=flags)
     else
         F
     end
 end
 
-function snf_preprocess(A::SparseMatrix{R}; flags::Flags4, itr=1) :: Tuple{SNF{R}, SparseMatrix{R}, Permutation, Permutation} where {R}
-    @debug "snf-preprocess (step $itr)" A = size(A) density = density(A)
+function pivotal_elim(A::SparseMatrix{R}; flags::Flags4, itr=1) :: Tuple{SNF{R}, SparseMatrix{R}, Permutation, Permutation} where {R}
+    @debug "pivotal-elim (step $itr)" A = size(A) density = density(A)
 
     piv = pivot(A)
     r = npivots(piv)
     (p, q) = permutations(piv)
 
     if r == 0 
-        return (snf_zero(A), A, p, q)
+        return (snf_zero(A; flags=flags), A, p, q)
     end
 
     (S, T) = schur_complement(A, piv; flags=flags)
@@ -73,17 +75,17 @@ function snf_preprocess(A::SparseMatrix{R}; flags::Flags4, itr=1) :: Tuple{SNF{R
     F = SNF(d, T)
 
     if !iszero(S)
-        (F₂, S₂, p₂, q₂) = snf_preprocess(S; flags=flags, itr=itr+1)
+        (F₂, S₂, p₂, q₂) = pivotal_elim(S; flags=flags, itr=itr+1)
 
-        F = snf_compose(F, F₂)
+        @debug "compose results (step $itr)" A = size(A) S = size(S₂)
+    
+        F = snf_compose(F, F₂; flags=flags)
         S = S₂
         p = p * shift(p₂, r)
         q = q * shift(q₂, r)
     end
 
-    if itr == 1
-        @debug "snf-preprocess done, total_pivots = $(length(F.factors))"
-    end
+    (itr == 1) && @debug "pivotal-elim done." A = size(A) S = size(S) total_pivots = length(F.factors)
     
     (F, S, p, q)
 end
@@ -97,7 +99,7 @@ function snf_sparse(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where {R}
     d = filter(!iszero, map( i -> S[i, i], 1 : r ))
     isempty(d) && (d = R[])
 
-    T = Transform(P, Pinv, Q, Qinv)
+    T = Transform(SparseMatrix{R}, P, Pinv, Q, Qinv)
 
     SNF(d, T)
 end
@@ -128,7 +130,7 @@ function snf_dense(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where {R}
         F = _snf_dense_sorted(B; flags=flags)
 
         d = F.factors
-        I = identity_transform(SparseMatrix{R}, (m - k, n - l))
+        I = identity_transform(SparseMatrix{R}, (m - k, n - l); flags=flags)
         T = permute(F.T ⊕ I, p, q)
     
         SNF(d, T)
@@ -146,25 +148,24 @@ function _snf_dense_sorted(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where {R
     isempty(d) && (d = R[])
 
     T = Transform(
-        SparseMatrix{R}(Pᵈ),
-        SparseMatrix{R}(Pinvᵈ),
-        SparseMatrix{R}(Qᵈ),
-        SparseMatrix{R}(Qinvᵈ)
+        SparseMatrix{R},
+        flags[1] ? SparseMatrix{R}(Pᵈ)    : nothing,
+        flags[2] ? SparseMatrix{R}(Pinvᵈ) : nothing,
+        flags[3] ? SparseMatrix{R}(Qᵈ)    : nothing,
+        flags[4] ? SparseMatrix{R}(Qinvᵈ) : nothing
     )
 
     SNF(d, T)
 end
 
-function snf_compose(F1::SNF{R}, F2::SNF{R}) :: SNF{R} where {R}
+function snf_compose(F1::SNF{R}, F2::SNF{R}; flags::Flags4) :: SNF{R} where {R}
     if length(F2.factors) == 0
         return F1
     end
 
-    I(k) = sparse_identity_matrix(R, k)
-
     r = length(F1.factors)
     d = vcat(F1.factors, F2.factors)
-    I = identity_transform(SparseMatrix{R}, (r, r))
+    I = identity_transform(SparseMatrix{R}, (r, r); flags=flags)
     T = F1.T * (I ⊕ F2.T)
 
     SNF(d, T)
