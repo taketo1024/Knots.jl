@@ -1,6 +1,6 @@
 using SparseArrays: sparse
 using Permutations
-using ..Matrix: snf_preprocess
+using ..Matrix: pivotal_elim
 
 abstract type AbstractComplex{R, X} end
 
@@ -41,6 +41,9 @@ end
 function generate_differential(C::AbstractComplex{R, X}, k::Int) :: AbstractMatrix{R} where {R, X}
     Gₖ   = generators(C, k)
     Gₖ₊₁ = generators(C, k + differentialDegree(C))
+
+    @debug "compute d[$k]" size = (length(Gₖ₊₁), length(Gₖ))
+    
     generate_matrix(Gₖ, Gₖ₊₁, R) do x 
         differentiate(C, k, x)
     end
@@ -92,7 +95,7 @@ function reduce!(C::AbstractComplex, k::Int; flags=(false, false, false, false))
     @debug "reduce C[$k]." flags = flags
 
     A = differential(C, k)
-    (F, S, p, q) = snf_preprocess(A; flags=flags)
+    (F, S, p, q) = pivotal_elim(A; flags=flags)
     r = length(F.factors) # diagonal entries of units.
 
     if r == 0 

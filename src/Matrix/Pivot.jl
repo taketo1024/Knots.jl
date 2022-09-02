@@ -101,7 +101,7 @@ function occupiedCols(piv::Pivot) :: Set{Int}
 end
 
 function findPivots!(piv::Pivot)
-    @debug "find pivots, A = size$(piv.size)"
+    @debug "find pivots" A = piv.size
 
     findFLPivots!(piv)
     findFLColumnPivots!(piv)

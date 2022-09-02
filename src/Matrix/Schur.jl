@@ -32,14 +32,19 @@ function _schur_complement_U(A::SparseMatrix{R}, r::Int, flags) where {R}
     (m, n) = size(A)
 
     U = A[1:r, 1:r]
+
+    @debug "compute U-inv, size = $(size(U))."
+    
     Uinv = inv_upper_triangular(U)
+
+    @debug "compute schur-complement, size = $((m - r, n - r))."
 
     X = A[1 : r, r + 1 : n]
     Y = A[r + 1 : m, 1 : r]
     Z = A[r + 1 : m, r + 1 : n]
     S = Z - Y * Uinv * X
 
-    dropzeros!(S)
+    @debug "done."
 
     P = flags[1] ? 
         sparse_hvcat(
