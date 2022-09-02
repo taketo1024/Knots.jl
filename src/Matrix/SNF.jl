@@ -52,7 +52,7 @@ function snf_preprocess(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where {R}
     
     if !iszero(S)
         F₂ = snf(S; preprocess=false, flags=flags)
-        snf_compose(F, F₂)
+        snf_compose(F, F₂; flags=flags)
     else
         F
     end
