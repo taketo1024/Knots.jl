@@ -3,17 +3,21 @@
 
 module SmithNormalForm_x
 
-using LinearAlgebra
+using LinearAlgebra: diagm
 using SparseArrays
 using Base.CoreLogging
 using ...Extensions: isunit, normalizing_unit
 
-function snf(A::AbstractMatrix{R}; flags=(true, true, true, true)) where {R}
-    (B, P, Pinv, Q, Qinv) = init(A)
+const Option{T} = Union{T, Nothing}
 
-    _snf_step1(B, P, Pinv, Q, Qinv; flags=flags)
-    _snf_step2(B, P, Pinv, Q, Qinv; flags=flags)
-    _snf_step3(B, P, Pinv, Q, Qinv; flags=flags)
+function snf(A::M; flags=(true, true, true, true)) :: 
+    Tuple{M, Option{M}, Option{M}, Option{M}, Option{M}} where {R, M <: AbstractMatrix{R}}
+
+    (B, P, Pinv, Q, Qinv) = init(A, flags)
+
+    _snf_step1(B, P, Pinv, Q, Qinv, flags)
+    _snf_step2(B, P, Pinv, Q, Qinv, flags)
+    _snf_step3(B, P, Pinv, Q, Qinv, flags)
 
     (B, P, Pinv, Q, Qinv)
 end
@@ -36,7 +40,7 @@ function divisible(a::R, b::R) where {R}
     iszero(b) ? iszero(a) : iszero(a % b)
 end
 
-function rcountnz(A::AbstractMatrix{R}, j::Int) where {R}
+function rcountnz(A::M, j::Int) where {R, M <: AbstractMatrix{R}}
     c = 0
     z = zero(R)
     @inbounds for row in eachrow(A)
@@ -47,7 +51,7 @@ function rcountnz(A::AbstractMatrix{R}, j::Int) where {R}
     return c
 end
 
-function ccountnz(A::AbstractMatrix{R}, i::Int) where {R}
+function ccountnz(A::M, i::Int) where {R, M <: AbstractMatrix{R}}
     c = 0
     z = zero(R)
     @inbounds for col in eachcol(A)
@@ -58,7 +62,7 @@ function ccountnz(A::AbstractMatrix{R}, i::Int) where {R}
     return c
 end
 
-function rswap!(A::AbstractMatrix, i1::Int, i2::Int)
+function rswap!(A::M, i1::Int, i2::Int) where {M <: AbstractMatrix}
     i1 == i2 && return A
     @inbounds for col in eachcol(A)
         col[i1], col[i2] = col[i2], col[i1]
@@ -66,7 +70,7 @@ function rswap!(A::AbstractMatrix, i1::Int, i2::Int)
     return A
 end
 
-function cswap!(A::AbstractMatrix, j1::Int, j2::Int)
+function cswap!(A::M, j1::Int, j2::Int) where {M <: AbstractMatrix}
     j1 == j2 && return A
     @inbounds for row in eachrow(A)
         row[j1], row[j2] = row[j2], row[j1]
@@ -76,7 +80,7 @@ end
 
 # Multiply from left: [a b] 
 #                     [c d]
-function rowelimination(A::AbstractMatrix{R}, a::R, b::R, c::R, d::R, i::Int, j::Int) where {R}
+function rowelimination(A::M, a::R, b::R, c::R, d::R, i::Int, j::Int) where {R, M <: AbstractMatrix{R}}
     @inbounds for col in eachcol(A)
         t = col[i]
         s = col[j]
@@ -91,7 +95,7 @@ end
 
 # Multiply from right: [a c] 
 #                      [b d]
-function colelimination(A::AbstractMatrix{R}, a::R, b::R, c::R, d::R, i::Int, j::Int) where {R}
+function colelimination(A::M, a::R, b::R, c::R, d::R, i::Int, j::Int) where {R, M <: AbstractMatrix{R}}
     @inbounds for row in eachrow(A)
         t = row[i]
         s = row[j]
@@ -104,7 +108,7 @@ function colelimination(A::AbstractMatrix{R}, a::R, b::R, c::R, d::R, i::Int, j:
     return A
 end
 
-function select_pivot(A::AbstractMatrix{R}, t::Int, j::Int) :: Int where {R}
+function select_pivot(A::M, t::Int, j::Int) :: Int where {R, M <: AbstractMatrix{R}}
     # Good pivot row for j-th column is the one
     # that have a smallest number of elements
     rows = size(A)[1]
@@ -121,19 +125,19 @@ function select_pivot(A::AbstractMatrix{R}, t::Int, j::Int) :: Int where {R}
     (prow > 0) ? prow : error()
 end
 
-function rmul(A::AbstractMatrix{R}, i::Int, a::R) where {R}
+function rmul(A::M, i::Int, a::R) where {R, M <: AbstractMatrix{R}}
     @views A[i, :] .*= a
 end
 
-function cmul(A::AbstractMatrix{R}, j::Int, a::R) where {R}
+function cmul(A::M, j::Int, a::R) where {R, M <: AbstractMatrix{R}}
     @views A[:, j] .*= a
 end
 
 function rowpivot(
-    A::AbstractMatrix{R},
-    P::AbstractMatrix{R},
-    Pinv::AbstractMatrix{R},
-    i, j; flags) where {R}
+    A::M,
+    P::Option{M},
+    Pinv::Option{M},
+    i, j, flags) where {R, M <: AbstractMatrix{R}}
 
     for k in reverse!(findall(!iszero, view(A, :, j)))
         i == k && continue
@@ -160,10 +164,10 @@ function rowpivot(
 end
 
 function colpivot(
-    A::AbstractMatrix{R},
-    Q::AbstractMatrix{R},
-    Qinv::AbstractMatrix{R},
-    i, j; flags) where {R}
+    A::M,
+    Q::Option{M},
+    Qinv::Option{M},
+    i, j, flags) where {R, M <: AbstractMatrix{R}}
 
     for k in reverse!(findall(!iszero, view(A, i, :)))
         j == k && continue
@@ -190,19 +194,19 @@ function colpivot(
 end
 
 function smithpivot(
-    A::AbstractMatrix{R},
-    P::AbstractMatrix{R},
-    Pinv::AbstractMatrix{R},
-    Q::AbstractMatrix{R},
-    Qinv::AbstractMatrix{R},
-    i, j; flags) where {R}
+    A::M,
+    P::Option{M},
+    Pinv::Option{M},
+    Q::Option{M},
+    Qinv::Option{M},
+    i, j, flags) where {R, M <: AbstractMatrix{R}}
 
     pivot = A[i, j]
     @assert pivot != zero(R) "Pivot cannot be zero"
 
     while ccountnz(A, i) > 1 || rcountnz(A, j) > 1
-        colpivot(A, Q, Qinv, i, j, flags=flags)
-        rowpivot(A, P, Pinv, i, j, flags=flags)
+        colpivot(A, Q, Qinv, i, j, flags)
+        rowpivot(A, P, Pinv, i, j, flags)
 
         if pivot == A[i, j] && (ccountnz(A, i) > 1 || rcountnz(A, j) > 1)
             error("Detect endless process! pivot = ($i, $j), $(A[i, j])")
@@ -210,40 +214,32 @@ function smithpivot(
     end
 end
 
-function init(A::AbstractSparseMatrix{R,Ti}) where {R,Ti}
+function init(A::M, flags::NTuple{4, Bool}) where {R, M <: AbstractSparseMatrix{R}}
+    m, n = size(A)
+
+    I(k) = sparse((1:k), (1:k), fill(one(R), k), k, k)
+
     B = copy(A)
-    rows, cols = size(A)
 
-    P = spzeros(R, rows, rows)
-    for i in 1:rows
-        P[i, i] = one(R)
-    end
-    Pinv = copy(P)
-
-    Q = spzeros(R, cols, cols)
-    for i in 1:cols
-        Q[i, i] = one(R)
-    end
-    Qinv = copy(Q)
+    P    = flags[1] ? I(m) : nothing
+    Pinv = flags[2] ? I(m) : nothing
+    Q    = flags[3] ? I(n) : nothing
+    Qinv = flags[4] ? I(n) : nothing
 
     return B, P, Pinv, Q, Qinv
 end
 
-function init(A::AbstractMatrix{R}) where {R}
+function init(A::M, flags::NTuple{4, Bool}) where {R, M <: AbstractMatrix{R}}
+    m, n = size(A)
+    
+    I(k) = diagm(fill(one(R), k))
+
     B = copy(A)
-    rows, cols = size(A)
 
-    P = zeros(R, rows, rows)
-    for i in 1:rows
-        P[i, i] = one(R)
-    end
-    Pinv = copy(P)
-
-    Q = zeros(R, cols, cols)
-    for i in 1:cols
-        Q[i, i] = one(R)
-    end
-    Qinv = copy(Q)
+    P    = flags[1] ? I(m) : nothing
+    Pinv = flags[2] ? I(m) : nothing
+    Q    = flags[3] ? I(n) : nothing
+    Qinv = flags[4] ? I(n) : nothing
 
     return B, P, Pinv, Q, Qinv
 end
@@ -251,12 +247,12 @@ end
 formatmtx(M) = size(M, 1) == 0 ? "[]" : repr(collect(M); context=IOContext(stdout, :compact => true))
 
 function _snf_step1(
-    A::AbstractMatrix{R},
-    P::AbstractMatrix{R},
-    Pinv::AbstractMatrix{R},
-    Q::AbstractMatrix{R},
-    Qinv::AbstractMatrix{R}; 
-    flags) where {R}
+    A::M,
+    P::Option{M},
+    Pinv::Option{M},
+    Q::Option{M},
+    Qinv::Option{M}, 
+    flags) where {R, M <: AbstractMatrix{R}}
 
     cols = size(A)[2]
     t = 1
@@ -289,7 +285,7 @@ function _snf_step1(
         end
 
         # @debug "Performing the pivot step at (i=$t, j=$t)" D = formatmtx(D)
-        smithpivot(A, P, Pinv, Q, Qinv, t, t, flags=flags)
+        smithpivot(A, P, Pinv, Q, Qinv, t, t, flags)
 
         if issparse(A)
             dropzeros!(A)
@@ -302,12 +298,12 @@ function _snf_step1(
 end
 
 function _snf_step2(
-    A::AbstractMatrix{R},
-    P::AbstractMatrix{R},
-    Pinv::AbstractMatrix{R},
-    Q::AbstractMatrix{R},
-    Qinv::AbstractMatrix{R}; 
-    flags) where {R}
+    A::M,
+    P::Option{M},
+    Pinv::Option{M},
+    Q::Option{M},
+    Qinv::Option{M}, 
+    flags) where {R, M <: AbstractMatrix{R}}
 
     # Make sure that d_i is divisible be d_{i+1}.
     r = minimum(size(A))
@@ -347,12 +343,12 @@ function _snf_step2(
 end
 
 function _snf_step3(
-    A::AbstractMatrix{R},
-    P::AbstractMatrix{R},
-    Pinv::AbstractMatrix{R},
-    Q::AbstractMatrix{R},
-    Qinv::AbstractMatrix{R}; 
-    flags) where {R}
+    A::M,
+    P::Option{M},
+    Pinv::Option{M},
+    Q::Option{M},
+    Qinv::Option{M}, 
+    flags) where {R, M <: AbstractMatrix{R}}
 
     rows, cols = size(A)
 
@@ -375,10 +371,10 @@ function _snf_step3(
 
     if issparse(A)
         dropzeros!(A)
-        dropzeros!(P)
-        dropzeros!(Pinv)
-        dropzeros!(Q)
-        dropzeros!(Qinv)
+        flags[1] && dropzeros!(P)
+        flags[2] && dropzeros!(Pinv)
+        flags[3] && dropzeros!(Q)
+        flags[4] && dropzeros!(Qinv)
     end
 end
 

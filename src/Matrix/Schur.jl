@@ -3,7 +3,7 @@ using LinearAlgebra: UnitUpperTriangular
 
 function schur_complement(A::SparseMatrix{R}, piv::Pivot{R}; flags=(true, true, true, true)) :: Tuple{SparseMatrix{R}, Transform{SparseMatrix{R}}} where {R}
     r = npivots(piv)
-    r == 0 && return (A, identity_transform(SparseMatrix{R}, size(A)))
+    r == 0 && return (A, identity_transform(SparseMatrix{R}, size(A); flags=flags))
 
     (p, q) = permutations(piv)
 
@@ -46,30 +46,30 @@ function _schur_complement_U(A::SparseMatrix{R}, r::Int, flags) where {R}
             (2, 2), 
             Uinv, O(r, m - r),
             -Y * Uinv, I(m - r)
-        ) : I(m)
+        ) : nothing
 
     Pinv = flags[2] ? 
         sparse_hvcat(
             (2, 2), 
             U, O(r, m - r),
             Y, I(m - r)
-        ) : I(m)
+        ) : nothing
 
     Q = flags[3] ? 
         sparse_hvcat(
             (2, 2), 
             I(r), -Uinv * X,
             O(n - r, r), I(n - r)
-        ) : I(n)
+        ) : nothing
 
     Qinv = flags[4] ?
         sparse_hvcat(
             (2, 2), 
             I(r), Uinv * X,
             O(n - r, r), I(n - r)
-        ) : I(n)
+        ) : nothing
 
-    T = Transform(P, Pinv, Q, Qinv)
+    T = Transform(SparseMatrix{R}, P, Pinv, Q, Qinv)
     
     (S, T)
 end
