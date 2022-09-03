@@ -95,8 +95,7 @@ function reduce!(C::AbstractComplex, k::Int; flags=(false, false, false, false))
     @debug "reduce C[$k]." flags = flags
 
     A = differential(C, k)
-    (F, S, p, q) = pivotal_elim(A; flags=flags)
-    r = length(F.factors) # diagonal entries of units.
+    (S, r, T, p, q) = pivotal_elim(A; flags=flags)
 
     if r == 0 
         @debug "nothing to reduce."
@@ -112,12 +111,12 @@ function reduce!(C::AbstractComplex, k::Int; flags=(false, false, false, false))
     set_differential!(C, k, S)
 
     if flags[4] # Q⁻¹
-        Tₖ = F.T.Q⁻¹[r + 1 : nₖ, :]
+        Tₖ = T.Q⁻¹[r + 1 : nₖ, :]
         set_transform!(C, k, Tₖ)
     end
 
     if flags[1] # P
-        Tₖ₊₁ = F.T.P[r + 1 : nₖ₊₁, :]
+        Tₖ₊₁ = T.P[r + 1 : nₖ₊₁, :]
         set_transform!(C, k₊₁, Tₖ₊₁)
     end
 
