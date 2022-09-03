@@ -18,7 +18,10 @@ using GaloisFields
             1 0 2 0 1 1 0 1 1
         ])
         (m, n) = size(A)
-        (d, P, Pinv, Q, Qinv) = snf(A; preprocess=false)
+
+        F = snf(A; preprocess=false)
+        d = F.factors
+        (P, Pinv, Q, Qinv) = F.T
 
         @test d == [1, 1, 1, 1, 1, 1]
         @test P * A * Q == spdiagm(m, n, d)
@@ -31,7 +34,9 @@ using GaloisFields
         (m, n) = (30, 40)
         A = sparse([ rand() < density ? 1 : 0 for i in 1:m, j in 1:n])
 
-        (d, P, Pinv, Q, Qinv) = snf(A; preprocess=false)
+        F = snf(A; preprocess=false)
+        d = F.factors
+        (P, Pinv, Q, Qinv) = F.T
 
         @test P * A * Q == spdiagm(m, n, d)
         @test isone(P * Pinv)
@@ -47,7 +52,10 @@ using GaloisFields
             8, 12
         )
         (m, n) = size(A)
-        (d, P, Pinv, Q, Qinv) = snf(A; preprocess=false)
+
+        F = snf(A; preprocess=false)
+        d = F.factors
+        (P, Pinv, Q, Qinv) = F.T
 
         @test d == [1, 1, 1, 1, 1, 1, 2]
         @test P * A * Q == spdiagm(m, n, d)
@@ -66,7 +74,10 @@ using GaloisFields
             12, 8
         )
         (m, n) = size(A)
-        (d, P, Pinv, Q, Qinv) = snf(A; preprocess=false)
+
+        F = snf(A; preprocess=false)
+        d = F.factors
+        (P, Pinv, Q, Qinv) = F.T
 
         @test d == [R(1), R(1), R(1), R(1), R(1), R(1), R(1), h^2]
         @test P * A * Q == spdiagm(m, n, d)
@@ -86,7 +97,10 @@ using GaloisFields
             8, 12
         )
         (m, n) = size(A)
-        (d, P, Pinv, Q, Qinv) = snf(A; preprocess=false)
+
+        F = snf(A; preprocess=false)
+        d = F.factors
+        (P, Pinv, Q, Qinv) = F.T
 
         @test d == [R(1), R(1), R(1), R(1), R(1), R(1), h, h]
         @test P * A * Q == spdiagm(m, n, d)
@@ -104,7 +118,10 @@ using GaloisFields
             1 0 2 0 1 1 0 1 1
         ])
         (m, n) = size(A)
-        (d, P, Pinv, Q, Qinv) = snf(A; preprocess=true)
+
+        F = snf(A; preprocess=false)
+        d = F.factors
+        (P, Pinv, Q, Qinv) = F.T
 
         @test d == [1, 1, 1, 1, 1, 1]
         @test P * A * Q == spdiagm(m, n, d)
@@ -117,7 +134,9 @@ using GaloisFields
         (m, n) = (30, 40)
         A = sparse([ rand() < density ? 1 : 0 for i in 1:m, j in 1:n])
 
-        (d, P, Pinv, Q, Qinv) = snf(A; preprocess=true)
+        F = snf(A; preprocess=false)
+        d = F.factors
+        (P, Pinv, Q, Qinv) = F.T
 
         @test P * A * Q == spdiagm(m, n, d)
         @test isone(P * Pinv)
@@ -133,7 +152,10 @@ using GaloisFields
             8, 12
         )
         (m, n) = size(A)
-        (d, P, Pinv, Q, Qinv) = snf(A; preprocess=true)
+
+        F = snf(A; preprocess=false)
+        d = F.factors
+        (P, Pinv, Q, Qinv) = F.T
 
         @test d == [1, 1, 1, 1, 1, 1, 2]
         @test P * A * Q == spdiagm(m, n, d)
@@ -152,7 +174,10 @@ using GaloisFields
             12, 8
         )
         (m, n) = size(A)
-        (d, P, Pinv, Q, Qinv) = snf(A; preprocess=true)
+
+        F = snf(A; preprocess=false)
+        d = F.factors
+        (P, Pinv, Q, Qinv) = F.T
 
         @test d == [R(1), R(1), R(1), R(1), R(1), R(1), R(1), h^2]
         @test P * A * Q == spdiagm(m, n, d)
@@ -172,7 +197,10 @@ using GaloisFields
             8, 12
         )
         (m, n) = size(A)
-        (d, P, Pinv, Q, Qinv) = snf(A; preprocess=true)
+
+        F = snf(A; preprocess=false)
+        d = F.factors
+        (P, Pinv, Q, Qinv) = F.T
 
         @test d == [R(1), R(1), R(1), R(1), R(1), R(1), h, h]
         @test P * A * Q == spdiagm(m, n, d)
