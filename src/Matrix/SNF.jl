@@ -11,31 +11,11 @@ struct SNF{R}
     T::Transform{SparseMatrix{R}}
 end
 
-function Base.iterate(S::SNF{R}, i = 0) where {R}
-    if i == 0
-        S.factors, 1
-    elseif i == 1
-        S.T.P, 2
-    elseif i == 2
-        S.T.P⁻¹, 3
-    elseif i == 3
-        S.T.Q, 4
-    elseif i == 4
-        S.T.Q⁻¹, 5
-    else
-        nothing
-    end
-end
-
-function snf_zero(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where {R}
-    SNF(R[], identity_transform(SparseMatrix{R}, size(A); flags=flags))
-end
-
 function snf(A::SparseMatrix{R}; preprocess=true, flags::Flags4=(true, true, true, true)) :: SNF{R} where {R}
     d_threshold = 0.5
 
     if iszero(A)
-        snf_zero(A; flags=flags)
+        snf_identity(A; flags=flags)
     elseif preprocess
         snf_preprocess(A; flags=flags)
     elseif density(A) < d_threshold
@@ -48,7 +28,9 @@ end
 function snf_preprocess(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where {R}
     @debug "snf-preprocess" A = size(A) density = density(A)
     
-    (F, S) = pivotal_elim(A; flags=flags)
+    (S, r, T) = pivotal_elim(A; flags=flags)
+    d = fill(one(R), r)
+    F = SNF(d, T)
     
     if !iszero(S)
         F₂ = snf(S; preprocess=false, flags=flags)
@@ -56,38 +38,6 @@ function snf_preprocess(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where {R}
     else
         F
     end
-end
-
-function pivotal_elim(A::SparseMatrix{R}; flags::Flags4, itr=1) :: Tuple{SNF{R}, SparseMatrix{R}, Permutation, Permutation} where {R}
-    @debug "pivotal-elim (step $itr)" A = size(A) density = density(A)
-
-    piv = pivot(A)
-    r = npivots(piv)
-    (p, q) = permutations(piv)
-
-    if r == 0 
-        return (snf_zero(A; flags=flags), A, p, q)
-    end
-
-    (S, T) = schur_complement(A, piv; flags=flags)
-
-    d = fill(one(R), r)
-    F = SNF(d, T)
-
-    if !iszero(S)
-        (F₂, S₂, p₂, q₂) = pivotal_elim(S; flags=flags, itr=itr+1)
-
-        @debug "compose results (step $itr)" A = size(A) S = size(S₂)
-    
-        F = snf_compose(F, F₂; flags=flags)
-        S = S₂
-        p = p * shift(p₂, r)
-        q = q * shift(q₂, r)
-    end
-
-    (itr == 1) && @debug "pivotal-elim done." A = size(A) S = size(S) total_pivots = length(F.factors)
-    
-    (F, S, p, q)
 end
 
 function snf_sparse(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where {R}
@@ -169,6 +119,10 @@ function snf_compose(F1::SNF{R}, F2::SNF{R}; flags::Flags4) :: SNF{R} where {R}
     T = F1.T * (I ⊕ F2.T)
 
     SNF(d, T)
+end
+
+function snf_identity(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where {R}
+    SNF(R[], identity_transform(SparseMatrix{R}, size(A); flags=flags))
 end
 
 function shift(p::Permutation, s::Int) :: Permutation

@@ -31,6 +31,10 @@ function vectorize(s::AbstractHomologySummand{R}, z::Dict{X, R}, v_type::Type{V}
     C = complex(parent(s))
     k = h_degree(s)
     v = vectorize(C, k, z, v_type)
+    vectorize(s, v)
+end
+
+function vectorize(s::AbstractHomologySummand{R}, v::Vector{R}) :: Vector{R} where {R}
     T = transform(s)
     v = T * v
 

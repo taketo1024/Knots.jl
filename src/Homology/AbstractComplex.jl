@@ -1,6 +1,6 @@
 using SparseArrays: sparse
 using Permutations
-using ..Matrix: pivotal_elim
+using ..Matrix: pivotal_elim, pivotal_elim_with
 
 abstract type AbstractComplex{R, X} end
 
@@ -95,8 +95,7 @@ function reduce!(C::AbstractComplex, k::Int; flags=(false, false, false, false))
     @debug "reduce C[$k]." flags = flags
 
     A = differential(C, k)
-    (F, S, p, q) = pivotal_elim(A; flags=flags)
-    r = length(F.factors) # diagonal entries of units.
+    (S, r, T, p, q) = pivotal_elim(A; flags=flags)
 
     if r == 0 
         @debug "nothing to reduce."
@@ -112,12 +111,12 @@ function reduce!(C::AbstractComplex, k::Int; flags=(false, false, false, false))
     set_differential!(C, k, S)
 
     if flags[4] # Q⁻¹
-        Tₖ = F.T.Q⁻¹[r + 1 : nₖ, :]
+        Tₖ = T.Q⁻¹[r + 1 : nₖ, :]
         set_transform!(C, k, Tₖ)
     end
 
     if flags[1] # P
-        Tₖ₊₁ = F.T.P[r + 1 : nₖ₊₁, :]
+        Tₖ₊₁ = T.P[r + 1 : nₖ₊₁, :]
         set_transform!(C, k₊₁, Tₖ₊₁)
     end
 
@@ -125,6 +124,33 @@ function reduce!(C::AbstractComplex, k::Int; flags=(false, false, false, false))
       C[$k]: $nₖ -> $(nₖ - r)
       C[$k₊₁]: $nₖ₊₁ -> $(nₖ₊₁ - r)
     """
+end
+
+function reduce_with!(C::AbstractComplex{R}, k::Int, v::Vector{R}; left::Bool) :: Vector{R} where {R}
+    @debug "reduce-with C[$k]."
+
+    A = differential(C, k)
+    (S, v, r, p, q) = pivotal_elim_with(A, v; left=left)
+
+    if r == 0 
+        @debug "nothing to reduce."
+        return v
+    end
+
+    k₊₁ = k + differentialDegree(C)
+    nₖ   = length(generators(C, k))
+    nₖ₊₁ = length(generators(C, k₊₁))
+
+    drop_generators!(C, k, r, q)
+    drop_generators!(C, k₊₁, r, p)
+    set_differential!(C, k, S)
+
+    @debug """cancelled $r pairs of generators.
+      C[$k]: $nₖ -> $(nₖ - r)
+      C[$k₊₁]: $nₖ₊₁ -> $(nₖ₊₁ - r)
+    """
+
+    v
 end
 
 function vectorize(C::AbstractComplex{R, X}, k::Int, z::Dict{X, R}) :: Vector{R} where {R, X}

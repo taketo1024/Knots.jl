@@ -1,7 +1,7 @@
 export s_c
 
 using ..Links: Link, components, writhe, n_seifert_circles
-using ..Homology: vectorize, reduce!, compute_single, rank
+using ..Homology: vectorize, reduce!, reduce_with!, compute_single, rank
 using ..Extensions: symbol, isunit
 
 function divisibility(a::R, c::R) :: Int where {R}
@@ -30,10 +30,11 @@ function s_c(l::Link, c::R; reduced=false) where {R}
     @debug "canonical cycle" α
 
     C = KhComplex(l, A; reduced=reduced, perform_reduction=false, with_transform=false)
+    v = vectorize(C, 0, α)
 
     reduce!(C, -2)
-    reduce!(C, -1; flags=(true, false, false, false)) # P
-    reduce!(C,  0; flags=(false, false, false, true)) # Q⁻¹
+    v = reduce_with!(C, -1, v; left=true ) # P
+    v = reduce_with!(C,  0, v; left=false) # Q⁻¹
     reduce!(C,  1)
 
     H = KhHomology(C)
@@ -42,13 +43,15 @@ function s_c(l::Link, c::R; reduced=false) where {R}
     @debug "homology computed" H0
     @assert rank(H0) == (reduced ? 1 : 2) "invalid homology" 
 
-    v = vectorize(H0, α)
+    v = vectorize(H0, v)
     
     @debug "vectorized" v
 
     k = reduced ?
         divisibility(v[1], c) : 
         min(divisibility(v[1], c), divisibility(v[2], c))
+
+    @assert k != typemax(Int)
 
     w = writhe(l)
     r = n_seifert_circles(l)
