@@ -15,19 +15,26 @@ function run(name::String, file="result.csv") :: Bool
         return false
     end
 
+    println("start: $name")
+
     L = Link(pdcode)
 
-    @time s_2  = s_c(L, 2)
-    @time s_3  = s_c(L, 3)
-    @time s_1i = s_c(L, GaussInt(1, 1))
+    @time s_2  = s_c(L, 2; reduced=true)
+    @time s_3  = s_c(L, 3; reduced=true)
+    @time s_1i = s_c(L, GaussInt(1, 1); reduced=true)
+    @time s_1i_unred = s_c(L, GaussInt(1, 1); reduced=false)
+
+    nontrivial = !(s_2 == s_3 == s_1i == s_1i_unred)
     
-    @show name s_2 s_3 s_1i
+    @show name s_2 s_3 s_1i s_1i_unred nontrivial
 
     result = DataFrame(
         name = name, 
         s_2 = s_2, 
         s_3 = s_3, 
-        s_1i = s_1i
+        s_1i = s_1i,
+        s_1i_unred = s_1i_unred,
+        nontrivial = nontrivial
     )
 
     CSV.write(file, result; append = isfile(file))
@@ -39,7 +46,9 @@ for i in 11:14
         name = "K$(i)n$(j)"
         next = run(name)
         !next && break 
+        break
     end
+    break
 end
 
 
