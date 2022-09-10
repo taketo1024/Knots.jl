@@ -10,7 +10,7 @@ using SparseArrays
 using OrderedCollections
 using Permutations: Permutation
 using Base.Threads
-using ..Extensions: isunit
+using ..Extensions: isunit, computational_weight
 using ..Utils: ReadWriteLock, read_lock, write_lock
 
 export Pivot, pivot, coordinates, permutations
@@ -19,8 +19,8 @@ mutable struct Pivot{R}
     size::Tuple{Int, Int}
     entries::Vector{Vector{Int}}   # row -> [col]
     rowHead::Vector{Int}           # row -> col
-    rowWeight::Vector{Int}         # row -> weight
-    colWeight::Vector{Int}         # col -> weight
+    rowWeight::Vector{Float64}     # row -> weight
+    colWeight::Vector{Float64}     # col -> weight
     candidates::Vector{Set{Int}}   # row -> Set(cols)
     pivots::OrderedDict{Int, Int}  # col -> row
     max_pivot::Int
@@ -39,8 +39,10 @@ Pivot(A::SparseMatrix{R}; max_pivot=30000) where {R} = begin
     for (i, j, a) in zip(findnz(A)...)
         iszero(a) && continue
         push!(entries[i], j)
-        rowWeight[i] += 1
-        colWeight[j] += 1
+
+        w = computational_weight(a)
+        rowWeight[i] += w
+        colWeight[j] += w
 
         if rowHead[i] == 0 || j < rowHead[i]
             rowHead[i] = j
