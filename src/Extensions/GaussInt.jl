@@ -52,6 +52,10 @@ function Base.gcdx(a::T, b::T) :: Tuple{T, T, T} where {T<:GaussInteger}
     (x, s0, t0)
 end
 
+function computational_weight(a::T) :: Float64 where {I, T<:GaussInteger{I}}
+    computational_weight(a.re) + computational_weight(a.im)
+end
+
 function symbol(::Type{T}) :: String where {I, T<:GaussInteger{I}}
     "$(symbol(I))[i]"
 end

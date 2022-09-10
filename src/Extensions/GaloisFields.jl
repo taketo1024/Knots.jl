@@ -3,7 +3,7 @@ using GaloisFields: AbstractGaloisField
 using ..Utils: subscript
 
 function isunit(a::T) :: Bool where {T<:AbstractGaloisField}
-    true
+    !iszero(a)
 end
 
 function normalizing_unit(a::T) :: Tuple{T, T} where {T<:AbstractGaloisField}
@@ -25,6 +25,10 @@ function Base.gcdx(a::T, b::T) :: Tuple{T, T, T} where {T<:AbstractGaloisField}
     else
         (one(T), inv(a), zero(T))
     end
+end
+
+function computational_weight(a::T) :: Float64 where {T<:AbstractGaloisField}
+    Float64(iszero(a) ? 0 : 1)
 end
 
 function symbol(::Type{T}) :: String where {T<:AbstractGaloisField}

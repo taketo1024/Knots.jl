@@ -31,6 +31,10 @@ function Base.gcdx(f::T, g::T) :: Tuple{T, T, T} where {T<:Polynomial}
     (x, s0, t0)
 end
 
+function computational_weight(a::T) :: Float64 where {R, X, T<:Polynomial{R, X}}
+    sum(computational_weight, coeffs(a))
+end
+
 function symbol(::Type{T}) :: String where {R, X, T<:Polynomial{R, X}}
     "$(symbol(R))[$X]"
 end
