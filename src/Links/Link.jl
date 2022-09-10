@@ -153,8 +153,12 @@ function Link(pdCode::Vector{Int}...)
     Link(collect(pdCode))
 end
 
-function Link(pdCode::Tuple{Int, Int, Int, Int}...)
-    Link(map(t -> collect(t), collect(pdCode)))
+function Link(pdCode::Vector{NTuple{4, Int}})
+    Link(map(t -> collect(t), pdCode))
+end
+
+function Link(pdCode::NTuple{4, Int}...)
+    Link(collect(pdCode))
 end
 
 function isEmpty(l::Link) :: Bool
