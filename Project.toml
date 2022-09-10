@@ -4,20 +4,23 @@ authors = ["Taketo Sano <taketo1024@gmail.com>"]
 version = "0.1.0"
 
 [deps]
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 GaloisFields = "8d0d7f98-d412-5cd4-8397-071c807280aa"
 JSON = "682c06a0-de6a-54ab-a142-c8b1cf79cde6"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 OrderedCollections = "bac558e1-5e72-5ebc-8fee-abe8a469f55d"
 Permutations = "2ae35dd2-176d-5d53-8349-f30d82d94d4f"
 Polynomials = "f27b6e38-b328-58d1-80ce-0feddd5e7a45"
+PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
 SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
 Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 
 [compat]
 GaloisFields = "1.2"
-Polynomials = "3.2"
-Permutations = "0.4"
 OrderedCollections = "1.4"
+Permutations = "0.4"
+Polynomials = "3.2"
 julia = "1.8"
 
 [extras]
