@@ -8,7 +8,7 @@ ENV["JULIA_DEBUG"] = "Knots"
 
 sg = pyimport("spherogram")
 
-function run(name::String, file="result.csv") :: Bool
+function run(name::String; dir="", file="result.csv") :: Bool
     pdcode = try
         sg.Link(name).PD_code()
     catch
@@ -37,18 +37,17 @@ function run(name::String, file="result.csv") :: Bool
         nontrivial = nontrivial
     )
 
+    file = dir * file
     CSV.write(file, result; append = isfile(file))
     true
 end
 
 for i in 11:14
-    for j in 1:10000
+    for j in 1:typemax(Int)
         name = "K$(i)n$(j)"
         next = run(name)
         !next && break 
-        break
     end
-    break
 end
 
 
