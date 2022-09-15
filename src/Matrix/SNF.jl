@@ -12,14 +12,10 @@ struct SNF{R}
 end
 
 function snf(A::SparseMatrix{R}; preprocess=true, flags::Flags4=(true, true, true, true)) :: SNF{R} where {R}
-    d_threshold = 0.5
-
     if iszero(A)
         snf_identity(A; flags=flags)
     elseif preprocess
         snf_preprocess(A; flags=flags)
-    elseif density(A) < d_threshold
-        snf_sparse(A; flags=flags)
     else
         snf_dense(A; flags=flags)
     end
@@ -38,20 +34,6 @@ function snf_preprocess(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where {R}
     else
         F
     end
-end
-
-function snf_sparse(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where {R}
-    @debug "snf-sparse" A = size(A) density = density(A)
-
-    r = min(size(A)...)
-    (S, P, Pinv, Q, Qinv) = SmithNormalForm_x.snf(A; flags=flags)
-
-    d = filter(!iszero, map( i -> S[i, i], 1 : r ))
-    isempty(d) && (d = R[])
-
-    T = Transform(SparseMatrix{R}, P, Pinv, Q, Qinv)
-
-    SNF(d, T)
 end
 
 function snf_dense(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where {R}
@@ -92,18 +74,25 @@ function _snf_dense_sorted(A::SparseMatrix{R}; flags::Flags4) :: SNF{R} where {R
     r = min(m, n)
 
     Aᵈ = DenseMatrix{R}(A)
+
+    # TODO: improve code
+    if R <: Integer
+        (Aᵈ, P, Pinv) = hnf_lll!(Aᵈ; flags=(flags[1], flags[2]))
+    end
+
     (Sᵈ, Pᵈ, Pinvᵈ, Qᵈ, Qinvᵈ) = SmithNormalForm_x.snf(Aᵈ; flags=flags) # PAQ = S
+
+    if R <: Integer
+        flags[1] && (Pᵈ = Pᵈ * P)
+        flags[2] && (Pinvᵈ = Pinv * Pinvᵈ)
+    end
+
+    Tᵈ = Transform(DenseMatrix{R}, Pᵈ, Pinvᵈ, Qᵈ, Qinvᵈ)
 
     d = filter(!iszero, map( i -> Sᵈ[i, i], 1 : r ))
     isempty(d) && (d = R[])
 
-    T = Transform(
-        SparseMatrix{R},
-        flags[1] ? SparseMatrix{R}(Pᵈ)    : nothing,
-        flags[2] ? SparseMatrix{R}(Pinvᵈ) : nothing,
-        flags[3] ? SparseMatrix{R}(Qᵈ)    : nothing,
-        flags[4] ? SparseMatrix{R}(Qinvᵈ) : nothing
-    )
+    T = convert(Transform{SparseMatrix{R}}, Tᵈ)
 
     SNF(d, T)
 end
