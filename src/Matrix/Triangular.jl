@@ -1,4 +1,14 @@
+using Base.Threads
+
 function inv_upper_triangular(U::SparseMatrix{R}) :: SparseMatrix{R} where {R}
+    if Threads.nthreads() >= 8 && minimum(size(U)) >= 10000
+        _inv_upper_triangular_m(U)
+    else
+        _inv_upper_triangular_s(U)
+    end
+end
+
+function _inv_upper_triangular_s(U::SparseMatrix{R}) :: SparseMatrix{R} where {R}
     n = size(U, 1)
 
     zero = Base.zero(R)
@@ -17,7 +27,8 @@ function inv_upper_triangular(U::SparseMatrix{R}) :: SparseMatrix{R} where {R}
 
         _solve_upper_trianguler!(U, d, e, x)
 
-        for (i, a) in enumerate(x)
+        for i in 1:n
+            a = x[i]
             iszero(a) && continue
 
             push!(Is, i)
@@ -26,6 +37,51 @@ function inv_upper_triangular(U::SparseMatrix{R}) :: SparseMatrix{R} where {R}
         end
 
         # it is guaranteed that e = 0.
+        fill!(x, zero)
+    end
+
+    sparse(Is, Js, Vs, n, n)
+end
+
+function _inv_upper_triangular_m(U::SparseMatrix{R}) :: SparseMatrix{R} where {R}
+    n = size(U, 1)
+
+    zero = Base.zero(R)
+    one = Base.one(R)
+    d = diagonal_entries(U)
+
+    Is = Int[]
+    Js = Int[]
+    Vs = R[]
+
+    l = ReentrantLock()
+    resources = Vector(undef, Threads.nthreads())
+
+    @threads for j in 1:n
+        tid = Threads.threadid()
+        if isassigned(resources, tid)
+            (x, e) = resources[tid]
+        else
+            x = fill(zero, n)
+            e = fill(zero, n)
+            resources[tid] = (x, e)
+        end
+    
+        e[j] = one
+
+        _solve_upper_trianguler!(U, d, e, x)
+        
+        lock(l) do 
+            for i in 1:n
+                a = x[i]
+                iszero(a) && continue
+
+                push!(Is, i)
+                push!(Js, j)
+                push!(Vs, a)
+            end
+        end
+
         fill!(x, zero)
     end
 
