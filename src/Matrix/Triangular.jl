@@ -27,7 +27,7 @@ function _inv_upper_triangular_s(U::SparseMatrix{R}) :: SparseMatrix{R} where {R
 
         _solve_upper_trianguler!(U, d, e, x)
 
-        for i in 1:n
+        for i in 1:j
             a = x[i]
             iszero(a) && continue
 
@@ -71,11 +71,11 @@ function _inv_upper_triangular_m(U::SparseMatrix{R}) :: SparseMatrix{R} where {R
 
         _solve_upper_trianguler!(U, d, e, x)
         
-        lock(l) do 
-            for i in 1:n
-                a = x[i]
-                iszero(a) && continue
+        for i in 1:j
+            a = x[i]
+            iszero(a) && continue
 
+            lock(l) do 
                 push!(Is, i)
                 push!(Js, j)
                 push!(Vs, a)
