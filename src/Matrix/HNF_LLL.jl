@@ -105,7 +105,7 @@ function hnf_lll_swap(A, P, Pinv, D, λ, k; flags::NTuple{2, Bool})
         λ[i, k] = t / D[k - 1]
     end
 
-    D[k - 1] = (D[k - 2] * D[k] + λ[k, k - 1]^2 / D[k - 1])
+    D[k - 1] = (D[k - 2] * D[k] + λ[k, k - 1]^2) / D[k - 1]
 end
 
 function hnf_lll_finalize(A, P, Pinv; flags::NTuple{2, Bool})
