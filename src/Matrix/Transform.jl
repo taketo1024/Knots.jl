@@ -55,7 +55,7 @@ function (⊕)(T₁::Transform{M}, T₂::Transform{M}) :: Transform{M} where {M 
     block_diagonal(T₁, T₂)
 end
 
-function Base.:*(T₁::Transform{M}, T₂::Transform{M}) :: Transform{M} where {M <: SparseMatrix} 
+function Base.:*(T₁::Transform{M}, T₂::Transform{M}) :: Transform{M} where {M <: AbstractMatrix} 
     compose(T₁, T₂)
 end
 
@@ -78,7 +78,7 @@ end
 # P₁ A Q₁ = B, 
 # P₂ B Q₂ = C 
 # -> P₂ P₁ A Q₁ Q₂ = C
-function compose(T₁::Transform{M}, T₂::Transform{M}) :: Transform{M} where {M <: SparseMatrix} 
+function compose(T₁::Transform{M}, T₂::Transform{M}) :: Transform{M} where {M <: AbstractMatrix} 
     P   = (T₁.flags[1] && T₂.flags[1]) ? 
         T₂.P * T₁.P : 
         nothing
@@ -110,3 +110,13 @@ function permute(T::Transform{M}, p::Permutation, q::Permutation) :: Transform{M
         nothing
     Transform(M, P, P⁻¹, Q, Q⁻¹)
 end
+
+Base.convert(::Type{T}, a::T) where {T <: Transform} = a
+Base.convert(::Type{Transform{M}}, T::Transform) where {M<:AbstractMatrix} = 
+    Transform(
+        M,
+        isnothing(T.P)   ? nothing : convert(M, T.P),
+        isnothing(T.P⁻¹) ? nothing : convert(M, T.P⁻¹),
+        isnothing(T.Q)   ? nothing : convert(M, T.Q),
+        isnothing(T.Q⁻¹) ? nothing : convert(M, T.Q⁻¹),
+    )
