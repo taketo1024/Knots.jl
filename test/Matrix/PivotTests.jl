@@ -29,8 +29,8 @@ using Test
 
         @test piv.entries == [[1,3,6,7,9], [2,3,4,6,8], [3,4,8,9], [2,3,5], [2,4,7,9],[1,3,5,6,8,9]]
         @test piv.rowHead == [1,2,3,2,2,1]
-        @test piv.rowWeight == [5,5,4,3,4,6]
-        @test piv.colWeight == [2,3,5,3,2,3,2,3,4]
+        @test piv.rowWeight == [5,6,4,5,4,6]
+        @test piv.colWeight == [2,3,5,3,4,3,2,4,4]
         @test piv.candidates == [Set([1,3,6,7,9]), Set([2,3,4,6]), Set([3,4,8,9]), Set([2,3]), Set([2,4,7,9]), Set([1,3,5,6,8,9])]
         @test isempty(piv.pivots)
     end
